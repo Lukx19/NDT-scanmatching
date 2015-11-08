@@ -19,30 +19,26 @@
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 
-
 #include <Eigen/Dense>
 
-
-class MlNdt{
+class MlNdt {
 public:
-    MlNdt(ros::NodeHandle & n,ros::NodeHandle & n_private);
-      
+  MlNdt(ros::NodeHandle &n, ros::NodeHandle &n_private);
+
 private:
-    ros::NodeHandle nh_;
-    ros::NodeHandle nh_private_;
-    std::string world_farme_;
-    std::string robot_base_frame_;
-    std::string tf_prefix_;
-    std::string odom_topic_;
-    std::string laser_topic_;
-    laser_geometry::LaserProjection projector_;
-    tf::TransformListener tf_list_;
-    void init();
-    void data_cb(const nav_msgs::Odometry::ConstPtr & odom, const sensor_msgs::LaserScan::ConstPtr& laser);
-    void pointCloud2Data_cb();
-    
+  ros::NodeHandle nh_;
+  ros::NodeHandle nh_private_;
+  std::string world_farme_;
+  std::string robot_base_frame_;
+  std::string tf_prefix_;
+  std::string odom_topic_;
+  std::string laser_topic_;
+  laser_geometry::LaserProjection projector_;
+  tf::TransformListener tf_list_;
+  void init();
+  void data_cb(const nav_msgs::Odometry::ConstPtr &odom,
+               const sensor_msgs::LaserScan::ConstPtr &laser);
+  void pointCloud2Data_cb();
 };
-
-
 
 #endif
