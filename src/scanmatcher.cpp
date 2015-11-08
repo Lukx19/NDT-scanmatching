@@ -1,4 +1,4 @@
-#include "../include/scanmatcher.h"
+#include <scanmatcher.h>
 
 Scanmatcher::points2_t Scanmatcher::projectPointsTo2D(points3_t &points) {
   points2_t points2d;

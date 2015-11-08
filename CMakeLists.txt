@@ -124,7 +124,9 @@ if(COMPILER_SUPPORTS_CXX11)
 else()
         message(STATUS "The compiler ${CMAKE_CXX_COMPILER} has no C++11 support. Please use a different C++ compiler.")
 endif()
+
 include_directories(
+    include
     ${PCL_INCLUDE_DIRS}
     ${catkin_INCLUDE_DIRS}
 )

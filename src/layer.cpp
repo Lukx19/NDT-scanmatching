@@ -1,4 +1,4 @@
-#include "../include/layer.h"
+#include <layer.h>
 
 Layer::point_t Layer::getPoint(const Id_t id) const { return points_->at(id); }
 
