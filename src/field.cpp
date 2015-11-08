@@ -1,4 +1,4 @@
-#include "../include/field.h"
+#include <field.h>
 
 void Field::addPoint(Id_t id) { points_ids_.emplace_back(id); }
 

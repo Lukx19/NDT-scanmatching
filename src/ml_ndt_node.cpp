@@ -1,4 +1,4 @@
-#include "../include/ml_ndt_node.h"
+#include <ml_ndt_node.h>
 
 MlNdt::MlNdt(ros::NodeHandle &n, ros::NodeHandle &n_private)
     : nh_(n), nh_private_(n_private) {
