@@ -32,17 +32,27 @@ void MlNdt::start() { ros::spin(); }
 void MlNdt::data_cb(const nav_msgs::Odometry::ConstPtr &odom,
                     const sensor_msgs::LaserScan::ConstPtr &laser) {
   ROS_WARN_STREAM("ML-NDT: Laser msg and odometry received.");
-  sensor_msgs::PointCloud2 laser_msg;
-  sensor_msgs::PointCloud2 laser_base;
-  pcl::PointCloud<pcl::PointXYZ> laser_base_points;
-  // transform laser message to robot base frame
-  projector_.projectLaser(*laser, laser_msg);
-  tf_list_.waitForTransform(robot_base_frame_, laser->header.frame_id,
-                            laser->header.stamp, ros::Duration(5.0));
-  pcl_ros::transformPointCloud(robot_base_frame_, laser_msg, laser_base,
-                               tf_list_);
-  pcl::fromROSMsg(laser_base, laser_base_points);
-  // std::cout<<laser_base_points.getMatrixXfMap()<<std::endl;
+  sensor_msgs::PointCloud2 laser_pcl_msg;
+  pcl::PointCloud<pcl::PointXYZ> laser_pcl;
+  pcl::PointCloud<pcl::PointXYZ> laser_pcl_base;
+  // project laser message to point cloud class in laser frame_id
+  projector_.projectLaser(*laser, laser_pcl_msg);
+  pcl::fromROSMsg(laser_pcl_msg, laser_pcl);
+  // transform point cloud from laser frame_id -> robot base frame
+  tf::StampedTransform trans;
+  try {
+    tf_list_.waitForTransform(robot_base_frame_, laser->header.frame_id,
+                              ros::Time(0), ros::Duration(10.0));
+    tf_list_.lookupTransform(robot_base_frame_, laser->header.frame_id,
+                             ros::Time(0), trans);
+    pcl_ros::transformPointCloud(laser_pcl, laser_pcl_base,trans);
+  } catch (tf::TransformException &e) {
+    ROS_ERROR_STREAM("ML_NDT: error in transforming laser point cloud from "
+                     "laser_frame to robot base "
+                     << e.what());
+  }
+
+  ROS_INFO_STREAM(laser_pcl_base.size());
 
   // transform robot odometry too odometry frame
   tf::Pose pose_tf;
@@ -56,12 +66,12 @@ void MlNdt::data_cb(const nav_msgs::Odometry::ConstPtr &odom,
   ROS_INFO("ML-NDT: Messages transformed.");
 
   if (!is_initialized) {
-    matcher_.initialize(pose, laser_base_points);
+    matcher_.initialize(pose, laser_pcl_base);
     is_initialized = true;
     ROS_INFO("ML-NDT: First laser scan inserted to structure");
   } else {
     // calculate new odometry based on scan matching
-    matcher_.calculate(pose, laser_base_points);
+    matcher_.calculate(pose, laser_pcl_base);
     pose_t new_pose = matcher_.getTransformation();
     ROS_INFO("ML-NDT: New odom calculated %f  %f  %f", new_pose[0], new_pose[1],
              new_pose[2]);
@@ -93,7 +103,7 @@ void MlNdt::data_cb(const nav_msgs::Odometry::ConstPtr &odom,
   }
 }
 
-void MlNdt::initParameters(){
+void MlNdt::initParameters() {
   // find tf_prefix if exists add it to tf_prefix_ variable
   tf_prefix_ = "";
   std::string tf_prefix_path;
@@ -116,13 +126,13 @@ void MlNdt::initParameters(){
 
   laser_topic_ = nh_private_.param<std::string>("laser_topic", "/laser");
 
-  resolution_ = static_cast<float>(nh_private_.param<double>("resolution", 0.5));
+  resolution_ =
+      static_cast<float>(nh_private_.param<double>("resolution", 0.5));
 
   max_range_ =
       static_cast<float>(nh_private_.param<double>("maximal_laser_range", 4.0));
 
-  layers_ =
-      static_cast<size_t>(nh_private_.param<int>("number_of_layers", 4));
+  layers_ = static_cast<size_t>(nh_private_.param<int>("number_of_layers", 4));
 
   if (tf_prefix_ != "") {
     robot_base_frame_ = tf_prefix_ + "/" + robot_base_frame_;
