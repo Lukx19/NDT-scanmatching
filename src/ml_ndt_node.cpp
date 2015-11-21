@@ -31,7 +31,7 @@ void MlNdt::start() { ros::spin(); }
 
 void MlNdt::data_cb(const nav_msgs::Odometry::ConstPtr &odom,
                     const sensor_msgs::LaserScan::ConstPtr &laser) {
-  ROS_WARN_STREAM("ML-NDT: Laser msg and odometry received.");
+  ROS_INFO_STREAM("ML-NDT: Laser msg and odometry received.");
   sensor_msgs::PointCloud2 laser_pcl_msg;
   pcl::PointCloud<pcl::PointXYZ> laser_pcl;
   pcl::PointCloud<pcl::PointXYZ> laser_pcl_base;
@@ -39,6 +39,7 @@ void MlNdt::data_cb(const nav_msgs::Odometry::ConstPtr &odom,
   projector_.projectLaser(*laser, laser_pcl_msg);
   pcl::fromROSMsg(laser_pcl_msg, laser_pcl);
   // transform point cloud from laser frame_id -> robot base frame
+  //TODO: change to time from laser msg. Resolve problems with tf timming error
   tf::StampedTransform trans;
   try {
     tf_list_.waitForTransform(robot_base_frame_, laser->header.frame_id,
@@ -53,6 +54,9 @@ void MlNdt::data_cb(const nav_msgs::Odometry::ConstPtr &odom,
   }
 
   ROS_INFO_STREAM(laser_pcl_base.size());
+
+  if(laser_pcl_base.size() == 0)
+    return;
 
   // transform robot odometry too odometry frame
   tf::Pose pose_tf;
