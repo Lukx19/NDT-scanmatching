@@ -131,7 +131,7 @@ void MlNdt::initParameters() {
   laser_topic_ = nh_private_.param<std::string>("laser_topic", "/laser");
 
   resolution_ =
-      static_cast<float>(nh_private_.param<double>("resolution", 0.5));
+      static_cast<size_t>(nh_private_.param<int>("resolution", 8));
 
   max_range_ =
       static_cast<float>(nh_private_.param<double>("maximal_laser_range", 4.0));

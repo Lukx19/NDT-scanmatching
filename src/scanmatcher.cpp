@@ -29,7 +29,7 @@ Scanmatcher::pose_t Scanmatcher::getTransformation() const{
   return transform_;
 }
 
-void Scanmatcher::setResolution(const float res){
+void Scanmatcher::setResolution(const size_t res){
   resolution_ = res;
 }
 void Scanmatcher::setLayers(const size_t layers){
@@ -54,10 +54,10 @@ void Scanmatcher::initializeNdt(pose_t &pose, points2_t &points) {
   // initialize layers
   layer_.clear();
   points_ = std::move(points);
-  layer_.push_back(Layer(&points_, 8, max_range_));
+  layer_.push_back(Layer(&points_, resolution_, max_range_));
   for (size_t i = 1; i < layers_count_; ++i) {
-    layer_.push_back(
-        Layer(&points_, static_cast<size_t>(std::pow(8, i)), max_range_));
+    layer_.push_back(Layer(
+        &points_, static_cast<size_t>(std::pow(resolution_, i)), max_range_));
   }
 
   pose_ = std::move(pose);

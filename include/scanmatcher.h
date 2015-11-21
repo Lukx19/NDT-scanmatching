@@ -7,8 +7,8 @@
 #include <pcl/point_types.h>
 
 #include <Eigen/Dense>
-#include "layer.h"
-#include "field.h"
+#include <layer.h>
+#include <field.h>
 class Field;
 class Layer;
 
@@ -21,7 +21,7 @@ public:
   typedef std::vector<point_t> points2_t;
   typedef std::vector<Eigen::Vector3f> points3_t;
   enum scan_type { S180, S360 };
-  Scanmatcher(float max_range=4.0, float resolution=0.5, size_t layers=4,
+  Scanmatcher(float max_range=4.0, size_t resolution=8, size_t layers=4,
               scan_type scan=scan_type::S180)
       : pose_(pose_t::Zero()), transform_(pose_t::Zero()),
         max_range_(max_range), resolution_(resolution), layers_count_(layers),
@@ -38,7 +38,7 @@ public:
   pose_t getTransformation() const;
   point_t getPoint(Id_t id) const;
 
-  void setResolution(const float res);
+  void setResolution(const size_t res);
   void setLayers(const size_t layers);
   void setMaxRange(const float range);
 
@@ -46,7 +46,7 @@ private:
   pose_t pose_;
   pose_t transform_;
   float max_range_;
-  float resolution_;
+  size_t resolution_;
   size_t layers_count_;
   bool initialized_;
   scan_type s_type_;

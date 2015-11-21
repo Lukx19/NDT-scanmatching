@@ -13,8 +13,8 @@
       <param name="calculated_odom_topic" value="/p3dx_0/slam/odom"/>
       <!-- where to listen for incomming laser msgs -->
       <param name="laser_topic" value="/p3dx_0/dpl/hal/laser/sensor0/LaserScan"/>
-      <!-- Lowest resolution of grid used for NDT calculation [m/cells]  -->
-       <param name="resolution" type="double" value="0.5"/>
+      <!-- How many cells will be created on the highest level. Next levels will have more cells  -->
+       <param name="resolution" type="int" value="8"/>
        <!-- Maximal allowe range of laser sensor. Data exceeding this number will be dropped -->
        <param name="maximal_laser_range" type="double" value="4.0"/>
        <!-- Number of layers used to calculate ML-NDT Default:4 -->
