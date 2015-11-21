@@ -1,9 +1,52 @@
 #include <scanmatcher.h>
 
-Scanmatcher::points2_t Scanmatcher::projectPointsTo2D(points3_t &points) {
+void Scanmatcher::initialize(pose_t &pose, points2_t &points) {
+  initializeNdt(pose, points);
+}
+void Scanmatcher::initialize(pose_t &pose, pcl_t &points) {
+  initializeNdt(pose, projectPointsTo2D(points));
+}
+void Scanmatcher::calculate(pose_t &pose, points2_t &points) {
+  calculateNdt(pose, points);
+}
+void Scanmatcher::calculate(pose_t &pose, pcl_t &points) {
+  calculateNdt(pose, projectPointsTo2D(points));
+}
+
+Scanmatcher::pose_t Scanmatcher::calculate(pose_t &prev_pose,
+                                           points2_t &first_scan,
+                                           pose_t &curr_pose,
+                                           points2_t &second_scan) {
+  points2_t old_points = std::move(points_);
+  pose_t old_pose = std::move(pose_);
+  initializeNdt(prev_pose, first_scan);
+  calculateNdt(curr_pose, second_scan);
+  initializeNdt(old_pose, old_points);
+  return transform_;
+}
+
+Scanmatcher::pose_t Scanmatcher::getTransformation() const{
+  return transform_;
+}
+
+void Scanmatcher::setResolution(const float res){
+  resolution_ = res;
+}
+void Scanmatcher::setLayers(const size_t layers){
+  layers_count_ = layers;  
+}
+
+void Scanmatcher::setMaxRange(const float range){
+  max_range_ = range;
+}
+
+// ****************** PRIVATE FUNCTIONS *********************************
+Scanmatcher::points2_t Scanmatcher::projectPointsTo2D(pcl_t &points) {
   points2_t points2d;
+  point_t one_point;
   for (auto pt : points) {
-    points2d.emplace_back(pt.segment(0, 2));
+    one_point << pt.x,pt.y;
+    points2d.emplace_back(one_point);
   }
   return points2d;
 }
@@ -54,27 +97,4 @@ Scanmatcher::pose_t Scanmatcher::calcTransformation(pose_t &first_pose,
   return std::move(transform);
 }
 
-void Scanmatcher::initialize(pose_t &pose, points2_t &points) {
-  initializeNdt(pose, points);
-}
-void Scanmatcher::initialize(pose_t &pose, points3_t &points) {
-  initializeNdt(pose, projectPointsTo2D(points));
-}
-void Scanmatcher::calculate(pose_t &pose, points2_t &points) {
-  calculateNdt(pose, points);
-}
-void Scanmatcher::calculate(pose_t &pose, points3_t &points) {
-  calculateNdt(pose, projectPointsTo2D(points));
-}
 
-Scanmatcher::pose_t Scanmatcher::calculate(pose_t &prev_pose,
-                                           points2_t &first_scan,
-                                           pose_t &curr_pose,
-                                           points2_t &second_scan) {
-  points2_t old_points = std::move(points_);
-  pose_t old_pose = std::move(pose_);
-  initializeNdt(prev_pose, first_scan);
-  calculateNdt(curr_pose, second_scan);
-  initializeNdt(old_pose, old_points);
-  return transform_;
-}

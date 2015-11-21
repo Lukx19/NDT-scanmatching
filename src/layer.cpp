@@ -2,75 +2,6 @@
 
 Layer::point_t Layer::getPoint(const Id_t id) const { return points_->at(id); }
 
-void Layer::initializeFields() {
-  for (size_t row = 0; row < size_; ++row) {
-    field_line_t line;
-    for (size_t col = 0; col < size_; ++col) {
-      line.push_back(Field(this));
-    }
-    fields_.push_back(std::move(line));
-  }
-
-  size_t id = 0;
-
-  for (const auto point : (*points_)) {
-    if (isInBoundries(point)) {
-      std::pair<size_t, size_t> coord = getFieldCoordintes(point);
-      fields_[coord.first][coord.second].addPoint(id);
-    }
-    ++id;
-  }
-}
-
-bool Layer::isInBoundries(const point_t &point) const {
-  if (std::abs(point(0)) < max_range_ && std::abs(point(1)) < max_range_)
-    return true;
-  else
-    return false;
-}
-
-Layer::point_t Layer::transformPoint(const Id_t id,
-                                     const pose_t &transform) const {
-  return std::move(transformPoint(points_->at(id), transform));
-}
-
-Layer::point_t Layer::transformPoint(const point_t &point,
-                                     const pose_t &transform) const {
-  float si = sinf(transform_(2));
-  float co = cosf(transform_(2));
-  Eigen::Matrix2f rotate;
-  rotate << co, -si, si, co;
-  return rotate * point + transform.segment(0, 2);
-}
-
-Eigen::Matrix3f Layer::makeToSPD(Eigen::Matrix3f &mat) {
-  Eigen::Matrix3f increase = Eigen::Matrix3f::Zero();
-  Eigen::LDLT<Eigen::Matrix3f> ldtl(mat);
-  Eigen::SelfAdjointEigenSolver<Eigen::Matrix3f> saes(mat,
-                                                      Eigen::EigenvaluesOnly);
-  float k = 0;
-  while (!ldtl.isPositive()) {
-    float min_eigen = saes.eigenvalues().minCoeff();
-    increase += Eigen::Matrix3f::Identity() * (powf(k, 2) * min_eigen);
-    ++k;
-    ldtl.compute(mat + increase);
-    saes.compute(mat + increase);
-  }
-  return std::move(mat + increase);
-}
-std::pair<size_t, size_t>
-Layer::getFieldCoordintes(const point_t &point) const {
-  // how many  meters of point locations are in one field
-  float resolution = max_range_ / size_;
-  // move space of points from [-range,range] to [0,2range] in x axis
-  size_t fieldx =
-      static_cast<size_t>(std::floor((point(0) + max_range_) / resolution));
-  // flips space of points in y axis from [0,range] to [range,0]
-  size_t fieldy =
-      static_cast<size_t>(std::floor((max_range_ - point(1)) / resolution));
-  return std::make_pair(fieldx, fieldy);
-}
-
 bool Layer::calculateNdt(pose_t &transf, points_t &points) {
 
   pose_t p = transf;
@@ -142,3 +73,80 @@ bool Layer::calculateNdt(pose_t &transf, points_t &points) {
   // if(hessian.)
   return true;
 }
+
+Layer::pose_t Layer::getTransformation(){
+  return transform_;
+}
+
+//*********************************** PRIVATE FUNCTIONS *********************
+
+void Layer::initializeFields() {
+  for (size_t row = 0; row < size_; ++row) {
+    field_line_t line;
+    for (size_t col = 0; col < size_; ++col) {
+      line.push_back(Field(this));
+    }
+    fields_.push_back(std::move(line));
+  }
+
+  size_t id = 0;
+
+  for (const auto point : (*points_)) {
+    if (isInBoundries(point)) {
+      std::pair<size_t, size_t> coord = getFieldCoordintes(point);
+      fields_[coord.first][coord.second].addPoint(id);
+    }
+    ++id;
+  }
+}
+
+bool Layer::isInBoundries(const point_t &point) const {
+  if (std::abs(point(0)) < max_range_ && std::abs(point(1)) < max_range_)
+    return true;
+  else
+    return false;
+}
+
+Layer::point_t Layer::transformPoint(const Id_t id,
+                                     const pose_t &transform) const {
+  return std::move(transformPoint(points_->at(id), transform));
+}
+
+Layer::point_t Layer::transformPoint(const point_t &point,
+                                     const pose_t &transform) const {
+  float si = sinf(transform_(2));
+  float co = cosf(transform_(2));
+  Eigen::Matrix2f rotate;
+  rotate << co, -si, si, co;
+  return rotate * point + transform.segment(0, 2);
+}
+
+Eigen::Matrix3f Layer::makeToSPD(Eigen::Matrix3f &mat) {
+  Eigen::Matrix3f increase = Eigen::Matrix3f::Zero();
+  Eigen::LDLT<Eigen::Matrix3f> ldtl(mat);
+  Eigen::SelfAdjointEigenSolver<Eigen::Matrix3f> saes(mat,
+                                                      Eigen::EigenvaluesOnly);
+  float k = 0;
+  while (!ldtl.isPositive()) {
+    float min_eigen = saes.eigenvalues().minCoeff();
+    increase += Eigen::Matrix3f::Identity() * (powf(k, 2) * min_eigen);
+    ++k;
+    ldtl.compute(mat + increase);
+    saes.compute(mat + increase);
+  }
+  return std::move(mat + increase);
+}
+std::pair<size_t, size_t>
+Layer::getFieldCoordintes(const point_t &point) const {
+  // how many  meters of point locations are in one field
+  float resolution = max_range_ / size_;
+  // move space of points from [-range,range] to [0,2range] in x axis
+  size_t fieldx =
+      static_cast<size_t>(std::floor((point(0) + max_range_) / resolution));
+  // flips space of points in y axis from [0,range] to [range,0]
+  size_t fieldy =
+      static_cast<size_t>(std::floor((max_range_ - point(1)) / resolution));
+  return std::make_pair(fieldx, fieldy);
+}
+
+

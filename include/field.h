@@ -3,10 +3,10 @@
 #include <vector>
 #include <Eigen/Dense>
 #include "layer.h"
-
+#define EIGEN_ALIGN_TO_BOUNDARY(n) __attribute__((aligned(n)))
 class Layer;
 
-class Field{
+class EIGEN_ALIGN_TO_BOUNDARY(8) Field{
   public:
     typedef std::size_t Id_t;
     typedef Eigen::Vector2f point_t;

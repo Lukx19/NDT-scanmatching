@@ -137,7 +137,7 @@ add_definitions(
     ${PCL_DEFINITIONS}
 )
 
-add_executable(ml_ndt_node src/ml_ndt_node.cpp)
+add_executable(ml_ndt_node src/ml_ndt_node.cpp src/scanmatcher.cpp src/layer.cpp src/field.cpp)
 target_link_libraries(ml_ndt_node 
     ${PCL_COMMON_LIBRARIES} 
     ${PCL_IO_LIBRARIES}

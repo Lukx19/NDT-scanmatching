@@ -18,7 +18,7 @@ public:
       dyn_matrix_t;
   typedef std::vector<Field> field_line_t;
   typedef std::vector<field_line_t> field_grid_t;
-  Layer(points_t *points, size_t size, size_t max_range)
+  Layer(points_t *points, size_t size, float max_range)
       : points_(points), transform_(pose_t::Zero()), size_(size),
         max_range_(max_range) {
     initializeFields();
@@ -36,7 +36,7 @@ private:
   points_t *points_;
   pose_t transform_;
   size_t size_;
-  size_t max_range_;
+  float max_range_;
   field_grid_t fields_;
 
   void initializeFields();
