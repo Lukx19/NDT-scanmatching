@@ -48,7 +48,7 @@ private:
   std::string new_odom_topic_;
   std::string laser_topic_;
   float max_range_;
-  float resolution_;
+  size_t resolution_;
   size_t layers_;
 
   laser_geometry::LaserProjection projector_;

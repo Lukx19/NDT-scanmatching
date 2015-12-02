@@ -80,26 +80,15 @@ void MlNdt::data_cb(const nav_msgs::Odometry::ConstPtr &odom,
     ROS_INFO("ML-NDT: New odom calculated %f  %f  %f", new_pose[0], new_pose[1],
              new_pose[2]);
     // fill in new odometry msg
-    nav_msgs::Odometry msg;
+    nav_msgs::Odometry msg = matcher_.getOdom();
     msg.header.frame_id = new_odom_frame_;
     msg.header.stamp = ros::Time::now();
     msg.header.seq = seq_;
     msg.twist = odom->twist;
-    tf::Quaternion orientation;
-    orientation.setRPY(0, 0, new_pose[2]);
-    msg.pose.pose.orientation.x = orientation.getX();
-    msg.pose.pose.orientation.y = orientation.getY();
-    msg.pose.pose.orientation.z = orientation.getZ();
-    msg.pose.pose.orientation.w = orientation.getW();
-    msg.pose.pose.position.x = new_pose[0];
-    msg.pose.pose.position.y = new_pose[1];
-    msg.pose.pose.position.z = 0;
     msg.pose.covariance = odom->pose.covariance;
     new_odom_pub_.publish(msg);
-    tf::Transform transform;
-    transform.setOrigin(
-        tf::Vector3(pose[0] - new_pose[0], pose[1] - new_pose[1], pose[2]));
-    transform.setRotation(pose_tf.getRotation() - orientation);
+    // publish tf transform based on new odometry
+    tf::Transform transform = matcher_.getTFTransform();
     tf_broadcast_.sendTransform(tf::StampedTransform(
         transform, ros::Time::now(), new_odom_frame_, odom_frame_));
     ++seq_;
