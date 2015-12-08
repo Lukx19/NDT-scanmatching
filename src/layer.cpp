@@ -6,19 +6,6 @@ Layer::point_t Layer::getPoint(const Id_t id) const {
 
 bool Layer::calculateNdt(transform_t &transf, points_t &points) {
 
-  float lfc1,lfc2,lfd3, lfd1,lfd2;
-  float integral, outlier_ratio, support_size;
-  integral = 0.1f;
-  outlier_ratio = 0.35f;
-  support_size = size_;
-  lfc1 = (1-outlier_ratio)/integral;
-  lfc2 = outlier_ratio/powf(support_size,2);
-  lfd3 = -logf(lfc2);
-  lfd1 = -logf( lfc1 + lfc2 ) - lfd3;
-  lfd2 = -logf((-logf( lfc1 * expf( -0.5f ) + lfc2 ) - lfd3 ) / lfd1);
-
-
-
   //printLaserPoints(*points_);
   //printLaserPoints(points);
   transform_t p = transf;
@@ -53,7 +40,7 @@ bool Layer::calculateNdt(transform_t &transf, points_t &points) {
       Eigen::Matrix2f inv_variace =field.calcInvertedVariance();
       //DEBUG(inv_variace);
       difference = trans_point - field.calcMean();
-      double point_score =lfd1*std::exp((double)(difference.dot(field.calcInvertedVariance() * difference) * -0.5*lfd2));
+      double point_score = scorePoint(field,trans_point);
       //DEBUG(difference.dot(field.calcInvertedVariance() * difference)* -0.5F);
       //DEBUG(point_score);
       total_score += point_score;
@@ -169,6 +156,19 @@ void Layer::initializeFields(points_t * points) {
 
 }
 
+void Layer::initializeParams(){
+  float lfc1,lfc2,lfd3;
+  float integral, outlier_ratio, support_size;
+  integral = 0.1f;
+  outlier_ratio = 0.35f;
+  support_size = size_;
+  lfc1 = (1-outlier_ratio)/integral;
+  lfc2 = outlier_ratio/powf(support_size,2);
+  lfd3 = -logf(lfc2);
+  LFD1 = -logf( lfc1 + lfc2 ) - lfd3;
+  LFD2 = -logf((-logf( lfc1 * expf( -0.5f ) + lfc2 ) - lfd3 ) / LFD1);
+}
+
 bool Layer::isInBoundries(const point_t &point) const {
   if (std::abs(point(0)) < max_range_ && std::abs(point(1)) < max_range_)
     return true;
@@ -245,4 +245,21 @@ bool Layer::getPointField(const point_t & pt,Field & field)const {
     return false;
   field = fields_[coords.first][coords.second];
   return true;
+}
+
+float Layer::scorePoint(const Field & field, const point_t & trans_point)const{
+  point_t difference = trans_point - field.calcMean();
+  return LFD1*std::exp((difference.dot(field.calcInvertedVariance() * difference) * -0.5F*LFD2));
+}
+
+float Layer::scoreLayer(const transform_t & trans, const points_t & cloud_in) const {
+   float total_score =0;
+   for (const auto & point : cloud_in) {
+      point_t trans_point = trans*point;
+      Field field;
+      if(!getPointField(trans_point,field))
+        continue;
+      total_score += scorePoint(field,trans_point);
+    }
+    return total_score;
 }
