@@ -20,6 +20,11 @@ class Field{
     typedef Eigen::Vector2f point_t;
     typedef std::vector<point_t> points2_t;
     typedef Eigen::Matrix2f var_t;
+    Field()
+      :mean_(point_t::Zero()),
+      variance_(var_t::Zero())
+      {}
+
     Field (points2_t * points)
       :points_(points),
       mean_(point_t::Zero()),
@@ -37,6 +42,8 @@ class Field{
     point_t mean_;
     var_t variance_;
     std::vector<Id_t> points_ids_;
+
+    float EVAL_FACTOR = 100;
        
     template<typename T>
     T pinv(const T & mat, float tolerance = 1.e-06f)const;
