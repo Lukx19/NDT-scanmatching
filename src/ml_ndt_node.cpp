@@ -14,8 +14,8 @@ MlNdt::MlNdt(ros::NodeHandle &n, ros::NodeHandle &n_private)
   new_odom_pub_ =
       nh_.advertise<nav_msgs::Odometry>(new_odom_topic_, 100, false);
 
-  odom_sub_.subscribe(nh_, odom_topic_, 1000);
-  laser_sub_.subscribe(nh_, laser_topic_, 1000);
+  odom_sub_.subscribe(nh_, odom_topic_, 10);
+  laser_sub_.subscribe(nh_, laser_topic_, 10);
 
   // sync messages using approximate alghorithm
   msg_sync_.connectInput(odom_sub_, laser_sub_);
