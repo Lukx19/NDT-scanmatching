@@ -44,7 +44,7 @@ private:
   size_t size_;
   float max_range_;
   field_grid_t fields_;
-  const size_t MAX_ITER = 4;
+  const size_t MAX_ITER = 10;
   const size_t MIN_POINTS_IN_FIELD = 3;
 
   void initializeFields(points_t * points);
@@ -53,7 +53,9 @@ private:
   //point_t transformPoint(const point_t &point, const transform_t &transform) const;
   std::pair<size_t, size_t> getFieldCoordintes(const point_t &pt) const;
   Eigen::Matrix3f makeToSPD(const Eigen::Matrix3f &hess,const Eigen::Vector3f & s_gradient)const;
+  Eigen::Matrix3f makeToSPD2(const Eigen::Matrix3f &hess,const Eigen::Vector3f & s_gradient)const;
   void printLaserPoints(const points_t & points)const;
+  bool getPointField(const point_t & pt, Field & field)const;
 };
 
 #endif
