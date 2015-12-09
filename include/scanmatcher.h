@@ -26,17 +26,16 @@ class Layer;
 class Scanmatcher {
 public:
   typedef size_t Id_t;
-  typedef Eigen::Vector3f pose_t;
-  typedef Eigen::Vector2f point_t;
-  typedef Eigen::Transform<float,2, Eigen::TransformTraits::Affine> transform_t;
+  typedef Eigen::Vector3d pose_t;
+  typedef Eigen::Vector2d point_t;
+  typedef Eigen::Transform<double,2, Eigen::TransformTraits::Affine> transform_t;
   typedef pcl::PointCloud<pcl::PointXYZ> pcl_t;
   typedef std::vector<point_t> points2_t;
-  typedef std::vector<Eigen::Vector3f> points3_t;
-  enum scan_type { S180, S360 };
-  Scanmatcher(float max_range=4.0, size_t resolution=8, size_t layers=4,
-              scan_type scan=scan_type::S180)
+  typedef std::vector<Eigen::Vector3d> points3_t;
+  
+  Scanmatcher(double max_range=4.0, size_t resolution=8, size_t layers=4)
       : pose_(pose_t::Zero()), max_range_(max_range), resolution_(resolution), layers_count_(layers),
-        initialized_(false), s_type_(scan), points_(points2_t(360)) {}
+        initialized_(false), points_(points2_t(360)) {}
 
   void initialize(pose_t &pose, points2_t &points);
   void initialize(pose_t &pose, pcl_t &points);
@@ -55,7 +54,7 @@ public:
 
   void setResolution(const size_t res);
   void setLayers(const size_t layers);
-  void setMaxRange(const float range);
+  void setMaxRange(const double range);
 
 private:
   pose_t pose_;
@@ -63,15 +62,14 @@ private:
   transform_t transform_;
  // transformation beetween last odometry pose and calculated pose
   //transform_t odom_pose_trans_;
-  float max_range_;
+  double max_range_;
   size_t resolution_;
   size_t layers_count_;
   bool initialized_;
-  scan_type s_type_;
   points2_t points_;
   std::vector<Layer> layer_;
 
-  const float PI_F = 3.14159265358979f;
+  const double PI_F = 3.14159265358979;
 
   points2_t projectPointsTo2D(pcl_t &points);
   void createLayers();
@@ -86,7 +84,7 @@ private:
   // calculates transform between last stored pose and new pose as a parameter
   transform_t calcTransformation(const pose_t &first_pose,const pose_t &second_pose) const;
   pose_t transformPose(const pose_t &pose,const transform_t &trans) const;
-  float getAngleFromTransform(const transform_t & trans) const;
+  double getAngleFromTransform(const transform_t & trans) const;
 
 };
 

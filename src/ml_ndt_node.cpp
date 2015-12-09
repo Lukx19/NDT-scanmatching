@@ -60,7 +60,7 @@ void MlNdt::data_cb(const nav_msgs::Odometry::ConstPtr &odom,
 
   // transform robot odometry too odometry frame
   tf::Pose pose_tf;
-  Eigen::Vector3f pose;
+  Eigen::Vector3d pose;
   tf_list_.waitForTransform(odom_frame_, odom->header.frame_id,
                             odom->header.stamp, ros::Duration(5.0));
 
@@ -76,7 +76,7 @@ void MlNdt::data_cb(const nav_msgs::Odometry::ConstPtr &odom,
   } else {
     // calculate new odometry based on scan matching
     matcher_.calculate(pose, laser_pcl_base);
-    pose_t new_pose = matcher_.getTransformation();
+    Scanmatcher::pose_t new_pose = matcher_.getTransformation();
     ROS_INFO("ML-NDT: New odom calculated %f  %f  %f", new_pose[0], new_pose[1],
              new_pose[2]);
     // fill in new odometry msg

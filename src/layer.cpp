@@ -13,7 +13,7 @@ bool Layer::calculateNdt(transform_t &transf, points_t &points) {
   transform_t old_p = transf;
   transform_t delta;
   point_t difference;
-  float best_score=0;
+  double best_score=0;
   size_t iter=0;
   bool converged = false;
   //DEBUG("Solving layer "<<size_);
@@ -21,23 +21,23 @@ bool Layer::calculateNdt(transform_t &transf, points_t &points) {
     //DEBUG("Starting new iteration");
     old_p = p;
     pose_t g = pose_t::Zero();
-    Eigen::Matrix3f hessian = hessian.Zero();
-    Eigen::Matrix<float, 2, 3> jacobian;
+    hessian_t hessian = hessian.Zero();
+    Eigen::Matrix<double, 2, 3> jacobian;
 
-    Eigen::Rotation2D<float> rot(0);
+    Eigen::Rotation2D<double> rot(0);
     rot = rot.fromRotationMatrix(p.rotation());
-    float si = std::sin(rot.angle());
-    float co = std::cos(rot.angle());
+    double si = std::sin(rot.angle());
+    double co = std::cos(rot.angle());
     double total_score = 0;
 
     for (const auto & point : points) {
       point_t trans_point = p*point;
-      float x = trans_point(0);
-      float y = trans_point(1);
+      double x = trans_point(0);
+      double y = trans_point(1);
       Field field;
       if(!getPointField(trans_point,field))
         continue;
-      Eigen::Matrix2f inv_variace =field.calcInvertedVariance();
+      covar_t inv_covar =field.calcInvertedVariance();
       //DEBUG(inv_variace);
       difference = trans_point - field.calcMean();
       double point_score = scorePoint(field,trans_point);
@@ -49,28 +49,13 @@ bool Layer::calculateNdt(transform_t &transf, points_t &points) {
       // incrementaly summing parts of  g for each point
       jacobian << 1, 0, -x * si - y * co, 
                   0, 1,  x * co - y * si;
-      for (long r = 0; r < 3; ++r) {
-        g(r) += (difference.dot(inv_variace * jacobian.col(r)))*point_score;
-      }
+      point_t hess_derivative;
+      hess_derivative << -x * co + y * si,
+                         -x * si - y * co;
+      g += pointGradient(difference,inv_covar,point_score,jacobian);
+      hessian+=pointHessian(difference,inv_covar,point_score,jacobian,hess_derivative);
       // create hessian for each point
-      for (long r = 0; r < 3; ++r) {
-        for (long c = 0; c < 3; ++c) {
-          float jacc_r =
-              difference.dot(inv_variace * jacobian.col(r));
-          float jacc_c =
-              -1*(difference.dot(inv_variace * jacobian.col(c)));
-          point_t hess;
-          if (r == 2 && c == 2)
-            hess << -x * co + y * si,
-                    -x * si - y * co;
-          else
-            hess << 0, 0;
-          hessian(r, c) +=
-              point_score *
-              (jacc_r * jacc_c + difference.transpose() * inv_variace * hess +
-               jacobian.col(c).transpose() * inv_variace * jacobian.col(r));
-        }
-      }
+      
     }
     if(total_score  > -0.0001){
      DEBUG("Score is too small finished.");
@@ -81,16 +66,16 @@ bool Layer::calculateNdt(transform_t &transf, points_t &points) {
     pose_t delta_p;
     hessian = makeToSPD(hessian,g);
 
-    Eigen::SelfAdjointEigenSolver<Eigen::Matrix3f> saes(hessian);
+    Eigen::SelfAdjointEigenSolver<hessian_t> saes(hessian);
     //DEBUG("eigenvalues: "<<saes.eigenvalues().transpose());
-    float min_eigenval = saes.eigenvalues().minCoeff();
+    double min_eigenval = saes.eigenvalues().minCoeff();
     if(min_eigenval<0 || saes.eigenvalues().sum() * 0 != 0){
       DEBUG("EIGEN values are negative");
       break;
     }
-    Eigen::LDLT<Eigen::Matrix3f> ldtl(hessian);
+    Eigen::LDLT<hessian_t> ldtl(hessian);
     if (ldtl.info() != Eigen::Success){
-      delta_p << 0,0,0;
+      delta_p.setZero();
       ROS_ERROR_STREAM("Error in computation of hessian");
       DEBUG("Error in computation of hessian");
       //throw std::logic_error("Error in computation of hessian");
@@ -99,15 +84,17 @@ bool Layer::calculateNdt(transform_t &transf, points_t &points) {
       if (ldtl.info() != Eigen::Success){
         ROS_ERROR_STREAM("Error in computation of diffrence in transformation");
         DEBUG("Error in computation of diffrence in transformation");
-        delta_p <<0,0,0;
+        delta_p.setZero();
         //throw std::logic_error(
         //    "Error in computation of diffrence in transformation");
       }
     }
     delta = delta.fromPositionOrientationScale(delta_p.head<2>(),
-                                              Eigen::Rotation2Df(delta_p(2)),
+                                              Eigen::Rotation2Dd(delta_p(2)),
                                               point_t::Ones());//delta_p;
       p=delta * p;
+      int step = lineSearchMT(p,g,delta_p,points);
+      DEBUG("step: "<<step);
    if(iter >= MAX_ITER || delta_p.array().abs().sum() < 0.001)
      converged = true;
     ++iter;
@@ -157,16 +144,16 @@ void Layer::initializeFields(points_t * points) {
 }
 
 void Layer::initializeParams(){
-  float lfc1,lfc2,lfd3;
-  float integral, outlier_ratio, support_size;
-  integral = 0.1f;
-  outlier_ratio = 0.35f;
+  double lfc1,lfc2,lfd3;
+  double integral, outlier_ratio, support_size;
+  integral = 0.1;
+  outlier_ratio = 0.35;
   support_size = size_;
   lfc1 = (1-outlier_ratio)/integral;
-  lfc2 = outlier_ratio/powf(support_size,2);
-  lfd3 = -logf(lfc2);
-  LFD1 = -logf( lfc1 + lfc2 ) - lfd3;
-  LFD2 = -logf((-logf( lfc1 * expf( -0.5f ) + lfc2 ) - lfd3 ) / LFD1);
+  lfc2 = outlier_ratio/pow(support_size,2);
+  lfd3 = -log(lfc2);
+  LFD1 = -log( lfc1 + lfc2 ) - lfd3;
+  LFD2 = -log((-log( lfc1 * exp( -0.5 ) + lfc2 ) - lfd3 ) / LFD1);
 }
 
 bool Layer::isInBoundries(const point_t &point) const {
@@ -176,19 +163,19 @@ bool Layer::isInBoundries(const point_t &point) const {
     return false;
 }
 
-Eigen::Matrix3f Layer::makeToSPD(const Eigen::Matrix3f &hess,const Eigen::Vector3f & s_gradient)const {
+Layer::hessian_t Layer::makeToSPD(const hessian_t &hess,const Eigen::Vector3d & s_gradient)const {
   //Eigen::LDLT<Eigen::Matrix3f> ldtl(hess);
-  Eigen::SelfAdjointEigenSolver<Eigen::Matrix3f> saes(hess);
-  Eigen::Vector3f eigenvalues=saes.eigenvalues();
-  float min = eigenvalues.minCoeff();
-  float max = eigenvalues.maxCoeff();
+  Eigen::SelfAdjointEigenSolver<hessian_t> saes(hess);
+  Eigen::Vector3d eigenvalues=saes.eigenvalues();
+  double min = eigenvalues.minCoeff();
+  double max = eigenvalues.maxCoeff();
   if(min < 0){
-    Eigen::Matrix3f eigenvectors = saes.eigenvectors();
-    float additive = s_gradient.norm();
+    hessian_t eigenvectors = saes.eigenvectors();
+    double additive = s_gradient.norm();
     if(min + additive <= 0){
-      additive =  0.001f *max - min;
+      additive =  0.001 *max - min;
     }
-    Eigen::Vector3f addition;
+    Eigen::Vector3d addition;
     addition<<additive,additive,additive;
     eigenvalues += addition;
     return eigenvectors*eigenvalues.asDiagonal()*eigenvectors.transpose();
@@ -197,28 +184,60 @@ Eigen::Matrix3f Layer::makeToSPD(const Eigen::Matrix3f &hess,const Eigen::Vector
   return hess;
 }
 
-Eigen::Matrix3f Layer::makeToSPD2(const Eigen::Matrix3f & hessian,const Eigen::Vector3f & gradient)const {
+Layer::hessian_t Layer::makeToSPD2(const hessian_t & hessian,const Eigen::Vector3d & gradient)const {
 
-  Eigen::EigenSolver<Eigen::Matrix3f> solver;
+  Eigen::EigenSolver<hessian_t> solver;
   solver.compute (hessian, false);
-  float min_eigenval = solver.eigenvalues().real().minCoeff();
+  double min_eigenval = solver.eigenvalues().real().minCoeff();
   if(min_eigenval<0){
-    float lambda = 1.1F*min_eigenval -1.0F;
-    Eigen::Matrix3f addition;
-    addition = -lambda * Eigen::Matrix3f::Identity(); 
+    double lambda = 1.1*min_eigenval -1.0;
+    hessian_t addition;
+    addition = -lambda * hessian_t::Identity(); 
     return hessian + addition;
   }
   return hessian;
 }
 
+Layer::pose_t Layer::pointGradient(const point_t & difference,
+                                   const covar_t & inv_covar,
+                                   double score,
+                                   const Eigen::Matrix<double, 2, 3> & jacobian)const{
+  pose_t g = pose_t::Zero();
+  for (long r = 0; r < 3; ++r) {
+    g(r) = (difference.dot(inv_covar * jacobian.col(r)))*score;
+  }
+  return g;
+}
 
+Layer::hessian_t Layer::pointHessian(const point_t & difference,
+                                     const covar_t & inv_covar,
+                                     double score,
+                                     const Eigen::Matrix<double, 2, 3> & jacobian,
+                                     const point_t & hessian_derivative)const{
+  hessian_t hessian; 
+  for (long r = 0; r < 3; ++r) {
+    for (long c = 0; c < 3; ++c) {
+      double jacc_r = difference.dot(inv_covar * jacobian.col(r));
+      double jacc_c =-1*(difference.dot(inv_covar * jacobian.col(c)));
+      point_t hess;
+      if (r == 2 && c == 2)
+        hess = hessian_derivative;
+      else
+        hess << 0, 0;
+      hessian(r, c) = score *
+                      (jacc_r * jacc_c + difference.transpose() * inv_covar * hess +
+                      jacobian.col(c).transpose() * inv_covar * jacobian.col(r));
+    }
+  }
+  return hessian;
+}
 /*
   Brief: Calculates coordinates in layer's grid from point in parameter
 */
 std::pair<size_t, size_t>
 Layer::getFieldCoordintes(const point_t &point) const {
   // how many  meters of point locations are in one field
-  float resolution = 2*max_range_ / size_;
+  double resolution = 2*max_range_ / size_;
   // move space of points from [-range,range] to [0,2range] in x axis
   size_t fieldx = 
       static_cast<size_t>(std::floor((max_range_-point(0)) / resolution));
@@ -247,13 +266,13 @@ bool Layer::getPointField(const point_t & pt,Field & field)const {
   return true;
 }
 
-float Layer::scorePoint(const Field & field, const point_t & trans_point)const{
+double Layer::scorePoint(const Field & field, const point_t & trans_point)const{
   point_t difference = trans_point - field.calcMean();
   return LFD1*std::exp((difference.dot(field.calcInvertedVariance() * difference) * -0.5F*LFD2));
 }
 
-float Layer::scoreLayer(const transform_t & trans, const points_t & cloud_in) const {
-   float total_score =0;
+double Layer::scoreLayer(const transform_t & trans, const points_t & cloud_in) const {
+   double total_score =0;
    for (const auto & point : cloud_in) {
       point_t trans_point = trans*point;
       Field field;

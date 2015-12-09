@@ -17,9 +17,9 @@ class Layer;
 class Field{
   public:
     typedef std::size_t Id_t;
-    typedef Eigen::Vector2f point_t;
+    typedef Eigen::Vector2d point_t;
     typedef std::vector<point_t> points2_t;
-    typedef Eigen::Matrix2f var_t;
+    typedef Eigen::Matrix2d var_t;
     Field()
       :mean_(point_t::Zero()),
       variance_(var_t::Zero())
@@ -43,27 +43,27 @@ class Field{
     var_t variance_;
     std::vector<Id_t> points_ids_;
 
-    float EVAL_FACTOR = 100;
+    double EVAL_FACTOR = 100;
        
     template<typename T>
-    T pinv(const T & mat, float tolerance = 1.e-06f)const;
+    T pinv(const T & mat, double tolerance = 1.e-06f)const;
 
 };
 
 template<typename T>
-T Field::pinv(const T & mat, float tolerance)const
+T Field::pinv(const T & mat, double tolerance)const
 {
-  Eigen::MatrixXf matX(mat.rows(),mat.cols());
+  Eigen::MatrixXd matX(mat.rows(),mat.cols());
   for(long row = 0; row < mat.rows();++row)
     for(long col = 0; col< mat.cols();++col)
       matX(row,col) = mat(row,col);
 
 
-  Eigen::JacobiSVD<Eigen::MatrixXf> svd_mat(matX, Eigen::ComputeThinU | Eigen::ComputeThinV);
-  Eigen::MatrixXf u = svd_mat.matrixU();
-  Eigen::MatrixXf v = svd_mat.matrixV();
-  Eigen::VectorXf s = svd_mat.singularValues();
-  float max = 0;
+  Eigen::JacobiSVD<Eigen::MatrixXd> svd_mat(matX, Eigen::ComputeThinU | Eigen::ComputeThinV);
+  Eigen::MatrixXd u = svd_mat.matrixU();
+  Eigen::MatrixXd v = svd_mat.matrixV();
+  Eigen::VectorXd s = svd_mat.singularValues();
+  double max = 0;
   for(long i =0; i < s.rows();++i){
     if(std::abs(s(i)) > max)
       max = std::abs(s(i));
@@ -76,7 +76,7 @@ T Field::pinv(const T & mat, float tolerance)const
       s(i) = 0;
     }
   }
-  Eigen::MatrixXf res = v * s.asDiagonal() * u.transpose();
+  Eigen::MatrixXd res = v * s.asDiagonal() * u.transpose();
   T res_correct_type;
   for(long row = 0; row < res.rows();++row)
     for(long col = 0; col< res.cols();++col)
