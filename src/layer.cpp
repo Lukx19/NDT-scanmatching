@@ -156,8 +156,9 @@ void Layer::initializeParams(){
   LFD2 = -log((-log( lfc1 * exp( -0.5 ) + lfc2 ) - lfd3 ) / LFD1);
 }
 
-bool Layer::isInBoundries(const point_t &point) const {
-  if (std::abs(point(0)) < max_range_ && std::abs(point(1)) < max_range_)
+bool Layer::isInBoundries(const point_t & point) const {
+  point_t pt = offset_inv_ * point;
+  if (std::abs(pt(0)) < max_range_ && std::abs(pt(1)) < max_range_)
     return true;
   else
     return false;
@@ -236,14 +237,15 @@ Layer::hessian_t Layer::pointHessian(const point_t & difference,
 */
 std::pair<size_t, size_t>
 Layer::getFieldCoordintes(const point_t &point) const {
+  point_t pt = offset_inv_ * point;
   // how many  meters of point locations are in one field
   double resolution = 2*max_range_ / size_;
   // move space of points from [-range,range] to [0,2range] in x axis
   size_t fieldx = 
-      static_cast<size_t>(std::floor((max_range_-point(0)) / resolution));
+      static_cast<size_t>(std::floor((max_range_-pt(0)) / resolution));
   // flips space of points in y axis from [0,range] to [range,0]
   size_t fieldy =
-      static_cast<size_t>(std::floor((max_range_ - point(1)) / resolution));
+      static_cast<size_t>(std::floor((max_range_ - pt(1)) / resolution));
   return std::make_pair(fieldx, fieldy);
 }
 

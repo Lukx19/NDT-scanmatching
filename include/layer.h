@@ -26,9 +26,11 @@ private:
   typedef std::vector<Field> field_line_t;
   typedef std::vector<field_line_t> field_grid_t;
 public:
-  Layer(points_t * points, size_t size, double max_range)
+  Layer(points_t * points, size_t size, double max_range, const transform_t & offset)
       : points_(points), size_(size),
-        max_range_(max_range) {
+        max_range_(max_range),
+        offset_(offset),
+        offset_inv_(offset.inverse()){
     initializeFields(points);
     initializeParams();
   }
@@ -46,9 +48,11 @@ private:
   transform_t transform_;
   size_t size_;
   double max_range_;
+  transform_t offset_;
+  transform_t offset_inv_;
   field_grid_t fields_;
   const size_t MAX_ITER = 10;
-  const size_t MIN_POINTS_IN_FIELD = 3;
+  const size_t MIN_POINTS_IN_FIELD = 9;
   double LFD1,LFD2;
 
   void initializeFields(points_t * points);
@@ -69,7 +73,7 @@ private:
                          const Eigen::Matrix<double, 2, 3> &jacobian,
                          const point_t &hessian_derivative) const;
 
-      void printLaserPoints(const points_t &points) const;
+  void printLaserPoints(const points_t &points) const;
   bool getPointField(const point_t & pt, Field & field)const;
   double scorePoint(const Field & field, const point_t & transformed_pt)const;
   double scoreLayer(const transform_t & trans, const points_t & cloud_in) const;
