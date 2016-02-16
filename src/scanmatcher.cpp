@@ -89,9 +89,11 @@ Scanmatcher::points2_t Scanmatcher::projectPointsTo2D(pcl_t &points) {
 }
 
 void Scanmatcher::createLayers(){
+  transform_t offset;
+  offset.Identity();
   for (size_t i = 0; i < layers_count_; ++i) {
     size_t power = static_cast<size_t>(pow(2,i));
-    layer_.push_back(Layer(&points_,resolution_ * power, max_range_));
+    layer_.push_back(Layer(&points_,resolution_ * power, max_range_,offset));
   }
 }
 
