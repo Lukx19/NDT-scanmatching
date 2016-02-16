@@ -37,9 +37,9 @@ bool Layer::calculateNdt(transform_t &transf, points_t &points) {
       Field field;
       if(!getPointField(trans_point,field))
         continue;
-      covar_t inv_covar =field.calcInvertedVariance();
+      covar_t inv_covar =field.getInvCovar();
       //DEBUG(inv_variace);
-      difference = trans_point - field.calcMean();
+      difference = trans_point - field.getMean();
       double point_score = scorePoint(field,trans_point);
       //DEBUG(difference.dot(field.calcInvertedVariance() * difference)* -0.5F);
       //DEBUG(point_score);
@@ -267,8 +267,8 @@ bool Layer::getPointField(const point_t & pt,Field & field)const {
 }
 
 double Layer::scorePoint(const Field & field, const point_t & trans_point)const{
-  point_t difference = trans_point - field.calcMean();
-  return LFD1*std::exp((difference.dot(field.calcInvertedVariance() * difference) * -0.5F*LFD2));
+  point_t difference = trans_point - field.getMean();
+  return LFD1*std::exp((difference.dot(field.getInvCovar() * difference) * -0.5F*LFD2));
 }
 
 double Layer::scoreLayer(const transform_t & trans, const points_t & cloud_in) const {

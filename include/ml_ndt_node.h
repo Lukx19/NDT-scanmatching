@@ -31,7 +31,7 @@ public:
       nav_msgs::Odometry, sensor_msgs::LaserScan> ImuSyncPolicy;
   typedef message_filters::Subscriber<nav_msgs::Odometry> odom_sub_t;
   typedef message_filters::Subscriber<sensor_msgs::LaserScan> laser_sub_t;
-  typedef Eigen::Vector3f pose_t;
+  typedef Eigen::Vector3d pose_t;
   MlNdt(ros::NodeHandle &n, ros::NodeHandle &n_private);
   void start();
 private:
