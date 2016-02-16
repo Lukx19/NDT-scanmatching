@@ -53,8 +53,8 @@ class Field{
     bool is_calc_;
     std::vector<Id_t> points_ids_;
 
-    const double EVAL_FACTOR = 100;
-    const size_t MIN_PTR_EVAL = 9;
+    double EVAL_FACTOR = 100;
+    size_t MIN_PTR_EVAL = 9;
 
     void prepNormDist();
     point_t calcMean() const;
