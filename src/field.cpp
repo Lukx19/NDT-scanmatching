@@ -37,6 +37,18 @@ size_t Field::getPoints() const{
   return points_ids_.size();
 }
 
+bool Field::isReady() const{
+  return is_calc_;
+}
+
+std::string Field::toString() const{
+  //return std::to_string(points_ids_.size())+" ";//+":"+mean_[1];
+  if(points_ids_.size() < MIN_PTR_EVAL)
+    return ". ";
+  else
+    return "O ";
+}
+
 // ******************** PRIVATE FUNCTIONS ***************
 void Field::prepNormDist(){
   mean_ = calcMean();
@@ -52,6 +64,7 @@ Field::point_t Field::calcMean() const {
   for (const auto & id : points_ids_) {
     mean += points_->at(id);
   }
+  //DEBUG("mean: "<<mean / points_ids_.size());
   return mean / points_ids_.size();
 }
 
@@ -65,10 +78,13 @@ Field::var_t Field::calcCovariance(const point_t & mean) const {
     mp(i,0) = pt(0) -mean(0);
     mp(i,1) = pt(1) -mean(1); 
   }
+  //DEBUG("var: "<<(mp.transpose()*mp) / (points_ids_.size()-1))
   return (mp.transpose()*mp) / (points_ids_.size()-1);
 }
 
 Field::var_t Field::calcInvertedCovariance(const var_t & covar)const{
+  if (points_ids_.size() < MIN_PTR_EVAL)
+    return var_t::Zero();
   Eigen::SelfAdjointEigenSolver<Eigen::Matrix2d> solver (covar);
   Eigen::Matrix2d evecs = solver.eigenvectors().real();
   Eigen::Vector2d evals = solver.eigenvalues().real();
@@ -77,6 +93,7 @@ Field::var_t Field::calcInvertedCovariance(const var_t & covar)const{
     if(evals(i)< max_eval* EVAL_FACTOR)
       evals(i) = max_eval / EVAL_FACTOR;
   }
+  //DEBUG("covar: "<<evecs*(evals.asDiagonal().inverse())*(evecs.transpose()));
   return evecs*(evals.asDiagonal().inverse())*(evecs.transpose());
 }
 

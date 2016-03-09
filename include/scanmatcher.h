@@ -82,9 +82,12 @@ private:
   bool calculateNdt(pose_t &pose, points2_t &points);
   bool calculateNdt(pose_t &pose, points2_t &&points);
   // calculates transform between last stored pose and new pose as a parameter
-  transform_t calcTransformation(const pose_t &first_pose,const pose_t &second_pose) const;
+  transform_t getPosesTransformation(const pose_t &from,const pose_t &to) const;
   pose_t transformPose(const pose_t &pose,const transform_t &trans) const;
+  pose_t getPoseFromTransform(const transform_t & trans) const;
   double getAngleFromTransform(const transform_t & trans) const;
+  double getDistanceFromTransform(const transform_t & trans)const;
+  double getAngleDiffrence(const pose_t & from, const pose_t & to)const;
 
 };
 

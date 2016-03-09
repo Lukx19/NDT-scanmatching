@@ -55,7 +55,7 @@ bool Layer::calculateNdt(transform_t &transf, points_t &points) {
       g += pointGradient(difference,inv_covar,point_score,jacobian);
       hessian+=pointHessian(difference,inv_covar,point_score,jacobian,hess_derivative);
       // create hessian for each point
-      
+
     }
     if(total_score  > -0.0001){
      DEBUG("Score is too small finished.");
@@ -108,6 +108,20 @@ Layer::transform_t Layer::getTransformation(){
   return transform_;
 }
 
+std::string Layer::toString() const{
+  std::string visual;
+  for (size_t row = 0; row < size_; ++row) {
+    for (size_t col = 0; col < size_; ++col) {
+      if(row == size_/2 && col == size_/2)
+        visual+="^ ";
+      else
+        visual+=fields_[row][col].toString();
+    }
+    visual+="\n";
+  }
+  return visual;
+
+}
 //*********************************** PRIVATE FUNCTIONS *********************
 
 void Layer::initializeFields(points_t * points) {
@@ -124,23 +138,18 @@ void Layer::initializeFields(points_t * points) {
   for (const auto & point : (*points_)) {
     if (isInBoundries(point)) {
       std::pair<size_t, size_t> coord = getFieldCoordintes(point);
-      // DEBUG("ML_NDT: point:"<<point<< "coordinates"<<coord.first<<" "<<coord.second);
+      //DEBUG("ML_NDT: point:"<<point<< "coordinates"<<coord.first<<" "<<coord.second);
       fields_[coord.first][coord.second].addPoint(id);
     }
     ++id;
   }
 
-  // for (size_t row = 0; row < size_; ++row) {
-  //   field_line_t line;
-  //   for (size_t col = 0; col < size_; ++col) {
-  //     if(fields_[row][col].getPoints()>MIN_POINTS_IN_FIELD)
-  //       std::cout<<"D";
-  //     else
-  //       std::cout<<".";
-  //   }
-  //   DEBUG("");
-  // }
-
+  for(auto & row:  fields_ ){
+    for(auto & field : row){
+      field.calcNormDistribution();
+    }
+  }
+  DEBUG("Layer initialized\n"+toString());
 }
 
 void Layer::initializeParams(){
@@ -158,6 +167,8 @@ void Layer::initializeParams(){
 
 bool Layer::isInBoundries(const point_t & point) const {
   point_t pt = offset_inv_ * point;
+ // DEBUG("point: "<<point<<" transform: "<<offset_.affine()<<" result: "<<pt);
+  //point_t pt = point;
   if (std::abs(pt(0)) < max_range_ && std::abs(pt(1)) < max_range_)
     return true;
   else
@@ -242,10 +253,10 @@ Layer::getFieldCoordintes(const point_t &point) const {
   double resolution = 2*max_range_ / size_;
   // move space of points from [-range,range] to [0,2range] in x axis
   size_t fieldx = 
-      static_cast<size_t>(std::floor((max_range_-pt(0)) / resolution));
+      static_cast<size_t>(std::floor(((max_range_)- pt(0)) / resolution));
   // flips space of points in y axis from [0,range] to [range,0]
   size_t fieldy =
-      static_cast<size_t>(std::floor((max_range_ - pt(1)) / resolution));
+      static_cast<size_t>(std::floor(((max_range_) - pt(1)) / resolution));
   return std::make_pair(fieldx, fieldy);
 }
 
@@ -262,7 +273,7 @@ bool Layer::getPointField(const point_t & pt,Field & field)const {
   if(!isInBoundries(pt))
     return false;
   std::pair<size_t, size_t> coords = getFieldCoordintes(pt);
-  if(fields_[coords.first][coords.second].getPoints() < MIN_POINTS_IN_FIELD)
+  if(!fields_[coords.first][coords.second].isReady())
     return false;
   field = fields_[coords.first][coords.second];
   return true;

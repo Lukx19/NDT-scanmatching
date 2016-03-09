@@ -38,12 +38,14 @@ class Field{
     //Field(Scanmatcher & ndt,std::size_t x0,std::size_t y0,std::size_t x1,std::size_t y1):
     //  ndt_(ndt),x0_(x0),y0_(y0),x1_(x1),y1_(y1){}
     void addPoint(Id_t id);
-    void calcNormDistribution(); 
+    void calcNormDistribution();
 
     point_t getMean() const;
     var_t getCovar() const;
     var_t getInvCovar() const;
     size_t getPoints() const;
+    bool isReady() const;
+    std::string toString() const;
 
   private:
     points2_t * points_;
@@ -54,7 +56,7 @@ class Field{
     std::vector<Id_t> points_ids_;
 
     double EVAL_FACTOR = 100;
-    size_t MIN_PTR_EVAL = 9;
+    size_t MIN_PTR_EVAL = 4;
 
     void prepNormDist();
     point_t calcMean() const;

@@ -3,12 +3,15 @@
 void Scanmatcher::initialize(pose_t &pose, points2_t &points) {
   initializeNdt(pose, points);
 }
+
 void Scanmatcher::initialize(pose_t &pose, pcl_t &points) {
   initializeNdt(pose, projectPointsTo2D(points));
 }
+
 bool Scanmatcher::calculate(pose_t &pose, points2_t &points) {
   return calculateNdt(pose, points);
 }
+
 bool Scanmatcher::calculate(pose_t &pose, pcl_t &points) {
   return calculateNdt(pose, projectPointsTo2D(points));
 }
@@ -34,7 +37,7 @@ Scanmatcher::pose_t Scanmatcher::getTransformation() const{
 
 tf::Transform Scanmatcher::getTFTransform()const{
   tf::Transform msg;
-  transform_t t = calcTransformation(pose_,last_odom_);
+  transform_t t = getPosesTransformation(pose_,last_odom_);
   tf::Quaternion orientation;
   double angle = getAngleFromTransform(t);
   orientation.setRPY(0, 0,angle);
@@ -70,7 +73,7 @@ void Scanmatcher::setResolution(const size_t res){
   resolution_ = res;
 }
 void Scanmatcher::setLayers(const size_t layers){
-  layers_count_ = layers;  
+  layers_count_ = layers;
 }
 
 void Scanmatcher::setMaxRange(const double range){
@@ -89,11 +92,13 @@ Scanmatcher::points2_t Scanmatcher::projectPointsTo2D(pcl_t &points) {
 }
 
 void Scanmatcher::createLayers(){
-  transform_t offset;
-  offset.Identity();
+transform_t offset;
+offset.setIdentity();
+//offset(1,2)-=1.0;
   for (size_t i = 0; i < layers_count_; ++i) {
     size_t power = static_cast<size_t>(pow(2,i));
-    layer_.push_back(Layer(&points_,resolution_ * power, max_range_,offset));
+    DEBUG("Creating Layer from create Layer");
+    layer_.emplace_back(std::move(Layer(&points_,resolution_ * power, max_range_,offset)));
   }
 }
 
@@ -114,7 +119,7 @@ void Scanmatcher::initializeNdt(pose_t &pose,points2_t & points) {
 
 void Scanmatcher::initializeNdt(pose_t &pose, points2_t && points) {
   layer_.clear();
-  //DEBUG("ML-NDT: Layer created with2"<<points_.size()<<"pts"); 
+  DEBUG("ML-NDT: Layer created with2"<<points_.size()<<"pts");
   points_.clear();
 
   for(auto && pt: points)
@@ -140,24 +145,25 @@ void Scanmatcher::updateLayers(const pose_t & calc_pose,const pose_t & odom,cons
 bool Scanmatcher::calculateNdt(pose_t & current_pose_odom, points2_t &points) {
   if (!initialized_)
     return false;
- transform_t transform = calcTransformation(last_odom_,current_pose_odom);
+  transform_t transform = getPosesTransformation(last_odom_,current_pose_odom);
   DEBUG("odom trans:\n"<<transform.matrix());
-  //transform_t transform = transform_t::Identity();
   double angle = getAngleFromTransform(transform);
+  double distance = getDistanceFromTransform(transform);
   DEBUG("angle:  "<<angle);
-  if(std::abs(angle)< 0.261799388)
+  DEBUG("distance: "<<distance);
+  if(std::abs(angle)< 0.261799388 && distance < 0.5)
    return false;
-  for (auto &l : layer_) {
-    if (l.calculateNdt(transform, points)) {
-      transform = std::move(l.getTransformation());
-    }
+   for (auto &l : layer_) {
+     if (l.calculateNdt(transform, points)) {
+       transform = l.getTransformation();
+     }
   }
-  DEBUG("tranform calculated \n"<<transform.matrix())
   transform_ = std::move(transform);
-  
-  pose_t transformed_pose =transformPose(pose_,transform);
+  DEBUG("tranform calculated \n"<<transform_.matrix());
+  pose_t transformed_pose =transformPose(pose_,transform_);
   DEBUG("calculated transformed pose \n"<<transformed_pose);
   DEBUG("odometry pose \n"<<current_pose_odom);
+  DEBUG("Diff odom<->calc_odom:\n"<<current_pose_odom - transformed_pose);
   updateLayers(transformed_pose,current_pose_odom, points);
   return true;
 }
@@ -166,39 +172,40 @@ bool Scanmatcher::calculateNdt(pose_t &pose, points2_t &&points) {
   return calculateNdt(pose, points);
 }
 
-Scanmatcher::transform_t Scanmatcher::calcTransformation(const pose_t &from,
+Scanmatcher::transform_t Scanmatcher::getPosesTransformation(const pose_t &from,
                                                     const pose_t & to)const {
-  // p0 ---> t --> p1
-  transform_t p0;
-  transform_t p1;
   transform_t t;
-  p0 = p0.fromPositionOrientationScale(from.head<2>(), 
-                                  Eigen::Rotation2Dd(from(2)), 
-                                  point_t::Ones());
-  p1 = p1.fromPositionOrientationScale(to.head<2>(),
-                                  Eigen::Rotation2Dd(to(2)),
-                                  point_t::Ones());
-  t =  p1 * p0.inverse();
+  t.setIdentity();
+  double angle =getAngleDiffrence(from,to);
+  Eigen::Rotation2Dd rot(angle);
+  t.matrix().block<2,2>(0,0) = rot.toRotationMatrix();
+  t.matrix().block<2,1>(0,2) = to.head<2>() - rot.toRotationMatrix() * from.head<2>();
   return std::move(t);
 }
 
 Scanmatcher::pose_t Scanmatcher::transformPose(const pose_t & pose,const transform_t &trans) const{
-  //transform_t t;
-  pose_t p;
-  //t = t.fromPositionOrientationScale(pose.head<2>(),
-  //                                Eigen::Rotation2Df(pose(2)),
-  //                               point_t::Ones());
-  //t=t*trans;
-  double angle = getAngleFromTransform(trans);
-  Eigen::Vector2d translation = pose.head<2>() + trans.translation(); 
-  Eigen::Quaterniond q_pose(Eigen::AngleAxisd(pose(2),Eigen::Vector3d::UnitZ()));
-  Eigen::Quaterniond q_trans(Eigen::AngleAxisd(angle,Eigen::Vector3d::UnitZ()));
-  Eigen::Matrix3d rot = (q_pose*q_trans).normalized().toRotationMatrix();
-  p<<translation(0),translation(1),std::atan2(rot(1,0),rot(0,0));
-  return p;
+  transform_t t;
+  t = trans * t.fromPositionOrientationScale(pose.head<2>(),
+                                                Eigen::Rotation2Dd(pose(2)),
+                                                point_t::Ones());
+  return getPoseFromTransform(t);
+}
+
+Scanmatcher::pose_t Scanmatcher::getPoseFromTransform(const transform_t & trans) const
+{
+  pose_t pose;
+  pose<<trans(0,2),trans(1,2), std::atan2(trans(1,0),trans(0,0));
+  return std::move(pose);
 }
 
 double Scanmatcher::getAngleFromTransform(const transform_t & trans) const{
   return std::atan2(trans.rotation()(1,0),trans.rotation()(0,0)); 
 }
 
+double Scanmatcher::getDistanceFromTransform(const transform_t & trans)const{
+  return std::sqrt(std::pow(trans.matrix()(0,2),2.0) + std::pow(trans.matrix()(1,2),2.0));
+}
+
+double Scanmatcher::getAngleDiffrence(const pose_t & from, const pose_t & to)const{
+  return std::atan2(std::sin(to(2)-from(2)), std::cos(to(2)-from(2)));
+}

@@ -41,6 +41,7 @@ public:
 
   bool calculateNdt(transform_t &transf, points_t &points);
   transform_t getTransformation();
+  std::string toString()const;
 
 private:
   // Scanmatcher & ndt_;
@@ -51,8 +52,8 @@ private:
   transform_t offset_;
   transform_t offset_inv_;
   field_grid_t fields_;
-  const size_t MAX_ITER = 10;
-  const size_t MIN_POINTS_IN_FIELD = 9;
+  const size_t MAX_ITER = 1;
+  const size_t MIN_POINTS_IN_FIELD = 4;
   double LFD1,LFD2;
 
   void initializeFields(points_t * points);

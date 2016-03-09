@@ -148,9 +148,9 @@
         Field field;
         if(!getPointField(trans_point,field))
           continue;
-        Eigen::Matrix2d inv_covar =field.calcInvertedVariance();
+        Eigen::Matrix2d inv_covar =field.getInvCovar();
         //DEBUG(inv_variace);
-        point_t difference = trans_point - field.calcMean();
+        point_t difference = trans_point - field.getMean();
         double point_score = scorePoint(field,trans_point);
         //DEBUG(difference.dot(field.calcInvertedVariance() * difference)* -0.5F);
         //DEBUG(point_score);
