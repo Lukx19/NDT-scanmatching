@@ -39,13 +39,13 @@ public:
       : pose_(pose_t::Zero()), max_range_(max_range), resolution_(resolution), layers_count_(layers),
         initialized_(false), points_(points2_t(360)) {}
 
-  void initialize(pose_t &pose, points2_t &points);
-  void initialize(pose_t &pose, pcl_t &points);
-  bool calculate(pose_t &pose, points2_t &points);
-  bool calculate(pose_t &pose, pcl_t &points);
+  void initialize(const pose_t &pose, const points2_t &points);
+  void initialize(const pose_t &pose, const pcl_t &points);
+  bool calculate(const pose_t &pose, const points2_t &points);
+  bool calculate(const pose_t &pose, const pcl_t &points);
 
-  pose_t calculate(pose_t &prev_pose, points2_t &first_scan, pose_t &curr_pose,
-                   points2_t &second_scan);
+  pose_t calculate(const pose_t &prev_pose, const points2_t &first_scan, const pose_t &curr_pose,
+                   const points2_t &second_scan);
 
   pose_t getTransformation() const;
   tf::Transform getTFTransform() const;
@@ -74,16 +74,14 @@ private:
 
   const double PI_F = 3.14159265358979;
 
-  points2_t projectPointsTo2D(pcl_t &points);
+  points2_t projectPointsTo2D(const pcl_t &points);
   void createLayers();
 
-  void initializeNdt(pose_t &pose, points2_t &points);
-  void initializeNdt(pose_t &pose, points2_t &&points);
-
+  void initializeNdt(const pose_t &pose, const points2_t &points);
+  void initializeNdt(const pose_t &pose, points2_t && points);
   void updateLayers(const pose_t & calc_pose,const pose_t & odom,const points2_t & points);
 
-  bool calculateNdt(pose_t &pose, points2_t &points);
-  bool calculateNdt(pose_t &pose, points2_t &&points);
+  bool calculateNdt(const pose_t &pose, const points2_t &points);
   // calculates transform between last stored pose and new pose as a parameter
   transform_t getPosesTransformation(const pose_t &from,const pose_t &to) const;
   pose_t transformPose(const pose_t &pose,const transform_t &trans) const;

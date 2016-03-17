@@ -23,7 +23,7 @@ ml_ndt_scanmatching::NDTMapMsg Layer::getLayerData() const
   }
   return msg;
 }
-bool Layer::calculateNdt(transform_t &transf, points_t &points) {
+bool Layer::calculateNdt(const transform_t &transf, const points_t &points) {
 
   //printLaserPoints(*points_);
   //printLaserPoints(points);

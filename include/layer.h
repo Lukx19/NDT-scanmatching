@@ -39,7 +39,7 @@ public:
   point_t getPoint(const Id_t id) const;
   ml_ndt_scanmatching::NDTMapMsg getLayerData() const;
 
-  bool calculateNdt(transform_t &transf, points_t &points);
+  bool calculateNdt(const transform_t &transf, const points_t  &points);
   transform_t getTransformation();
   std::string toString()const;
 
@@ -47,8 +47,8 @@ private:
   // Scanmatcher & ndt_;
   points_t *points_;
   transform_t transform_;
-  size_t size_;
-  double max_range_;
+  size_t size_; // number of fields in layer. layer = size_ x size_ fields
+  double max_range_; // max range in meters -> size_ = 2 *max_range meters
   transform_t offset_;
   transform_t offset_inv_;
   field_grid_t fields_;

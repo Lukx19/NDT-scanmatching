@@ -1,25 +1,25 @@
 #include <scanmatcher.h>
 
-void Scanmatcher::initialize(pose_t &pose, points2_t &points) {
+void Scanmatcher::initialize(const pose_t &pose, const points2_t &points) {
   initializeNdt(pose, points);
 }
 
-void Scanmatcher::initialize(pose_t &pose, pcl_t &points) {
+void Scanmatcher::initialize(const pose_t &pose, const pcl_t &points) {
   initializeNdt(pose, projectPointsTo2D(points));
 }
 
-bool Scanmatcher::calculate(pose_t &pose, points2_t &points) {
+bool Scanmatcher::calculate(const pose_t &pose, const points2_t &points) {
   return calculateNdt(pose, points);
 }
 
-bool Scanmatcher::calculate(pose_t &pose, pcl_t &points) {
+bool Scanmatcher::calculate(const pose_t &pose,const pcl_t &points) {
   return calculateNdt(pose, projectPointsTo2D(points));
 }
 
-Scanmatcher::pose_t Scanmatcher::calculate(pose_t &prev_pose,
-                                           points2_t &first_scan,
-                                           pose_t &curr_pose,
-                                           points2_t &second_scan) {
+Scanmatcher::pose_t Scanmatcher::calculate(const pose_t &prev_pose,
+                                           const points2_t &first_scan,
+                                           const pose_t &curr_pose,
+                                           const points2_t &second_scan) {
   points2_t old_points = std::move(points_);
   pose_t old_pose = std::move(pose_);
   initializeNdt(prev_pose, first_scan);
@@ -90,7 +90,7 @@ void Scanmatcher::setMaxRange(const double range){
 }
 
 // ****************** PRIVATE FUNCTIONS *********************************
-Scanmatcher::points2_t Scanmatcher::projectPointsTo2D(pcl_t &points) {
+Scanmatcher::points2_t Scanmatcher::projectPointsTo2D(const pcl_t &points) {
   points2_t points2d;
   point_t one_point;
   for (auto pt : points) {
@@ -111,7 +111,7 @@ offset.setIdentity();
   }
 }
 
-void Scanmatcher::initializeNdt(pose_t &pose,points2_t & points) {
+void Scanmatcher::initializeNdt(const pose_t &pose,const points2_t & points) {
   // initialize layers
   layer_.clear();
   //DEBUG("ML-NDT: Layer created with"<<points_.size()<<"pts"); 
@@ -126,7 +126,7 @@ void Scanmatcher::initializeNdt(pose_t &pose,points2_t & points) {
   initialized_ = true;
 }
 
-void Scanmatcher::initializeNdt(pose_t &pose, points2_t && points) {
+void Scanmatcher::initializeNdt(const pose_t &pose, points2_t && points) {
   layer_.clear();
   DEBUG("ML-NDT: Layer created with2"<<points_.size()<<"pts");
   points_.clear();
@@ -151,7 +151,7 @@ void Scanmatcher::updateLayers(const pose_t & calc_pose,const pose_t & odom,cons
   last_odom_ = odom;
 }
 
-bool Scanmatcher::calculateNdt(pose_t & current_pose_odom, points2_t &points) {
+bool Scanmatcher::calculateNdt(const pose_t & current_pose_odom, const points2_t &points) {
   if (!initialized_)
     return false;
   transform_t transform = getPosesTransformation(last_odom_,current_pose_odom);
@@ -178,9 +178,9 @@ bool Scanmatcher::calculateNdt(pose_t & current_pose_odom, points2_t &points) {
   return true;
 }
 
-bool Scanmatcher::calculateNdt(pose_t &pose, points2_t &&points) {
-  return calculateNdt(pose, points);
-}
+// bool Scanmatcher::calculateNdt(pose_t &pose, points2_t &&points) {
+//   return calculateNdt(pose, points);
+// }
 
 Scanmatcher::transform_t Scanmatcher::getPosesTransformation(const pose_t &from,
                                                     const pose_t & to)const {
