@@ -67,7 +67,16 @@ nav_msgs::Odometry Scanmatcher::getOdom()const{
   return odom;
 }
 
+ml_ndt_scanmatching::NDTMapMsg Scanmatcher::getLayerData(size_t layer_id) const{
+  if(layer_id > layer_.size())
+    throw new std::invalid_argument("Showing data for this layer id is not possible. Check call of Scanmatcher::getLayerData(layer_id)");
+  ml_ndt_scanmatching::NDTMapMsg msg;
+  msg = layer_[layer_id].getLayerData();
+  msg.x_cen = pose_(0);
+  msg.y_cen = pose_(1);
 
+  return msg;
+}
 
 void Scanmatcher::setResolution(const size_t res){
   resolution_ = res;
@@ -98,7 +107,7 @@ offset.setIdentity();
   for (size_t i = 0; i < layers_count_; ++i) {
     size_t power = static_cast<size_t>(pow(2,i));
     DEBUG("Creating Layer from create Layer");
-    layer_.emplace_back(std::move(Layer(&points_,resolution_ * power, max_range_,offset)));
+    layer_.emplace_back(Layer(&points_,resolution_ * power, max_range_,offset));
   }
 }
 
@@ -181,7 +190,7 @@ Scanmatcher::transform_t Scanmatcher::getPosesTransformation(const pose_t &from,
   Eigen::Rotation2Dd rot(angle);
   t.matrix().block<2,2>(0,0) = rot.toRotationMatrix();
   t.matrix().block<2,1>(0,2) = to.head<2>() - rot.toRotationMatrix() * from.head<2>();
-  return std::move(t);
+  return t;
 }
 
 Scanmatcher::pose_t Scanmatcher::transformPose(const pose_t & pose,const transform_t &trans) const{
@@ -196,7 +205,7 @@ Scanmatcher::pose_t Scanmatcher::getPoseFromTransform(const transform_t & trans)
 {
   pose_t pose;
   pose<<trans(0,2),trans(1,2), std::atan2(trans(1,0),trans(0,0));
-  return std::move(pose);
+  return pose;
 }
 
 double Scanmatcher::getAngleFromTransform(const transform_t & trans) const{

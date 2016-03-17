@@ -16,6 +16,8 @@
 #include <layer.h>
 #include <field.h>
 
+#include <ml_ndt_scanmatching/NDTMapMsg.h>
+
 #ifndef DEBUG
   #define DEBUG(out); std::cout<<out<<"\n";
 #endif
@@ -49,6 +51,7 @@ public:
   tf::Transform getTFTransform() const;
   pose_t getPose() const;
   nav_msgs::Odometry getOdom() const;
+  ml_ndt_scanmatching::NDTMapMsg getLayerData(size_t layer_id) const;
 
   point_t getPoint(Id_t id) const;
 
