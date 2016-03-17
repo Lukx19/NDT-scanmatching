@@ -13,6 +13,7 @@ find_package(catkin REQUIRED
   pcl_ros
   tf
   geometry_msgs
+  message_generation
 )
 find_package(PCL 1.3 REQUIRED COMPONENTS common io)
 
@@ -51,11 +52,11 @@ find_package(PCL 1.3 REQUIRED COMPONENTS common io)
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
 ## Generate messages in the 'msg' folder
-# add_message_files(
-#   FILES
-#   Message1.msg
-#   Message2.msg
-# )
+add_message_files(
+   FILES
+   NDTCellMsg.msg
+   NDTMapMsg.msg
+ )
 
 ## Generate services in the 'srv' folder
 # add_service_files(
@@ -72,10 +73,10 @@ find_package(PCL 1.3 REQUIRED COMPONENTS common io)
 # )
 
 ## Generate added messages and services with any dependencies listed here
-# generate_messages(
-#   DEPENDENCIES
-#   std_msgs  # Or other packages containing msgs
-# )
+ generate_messages(
+   DEPENDENCIES
+   std_msgs  # Or other packages containing msgs
+ )
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -109,7 +110,7 @@ find_package(PCL 1.3 REQUIRED COMPONENTS common io)
 catkin_package(
   INCLUDE_DIRS include
 #  LIBRARIES ml_ndt_scanmatching
-#  CATKIN_DEPENDS roscpp vrep_common laser_geometry
+  CATKIN_DEPENDS message_runtime std_msgs #roscpp vrep_common laser_geometry
 #  DEPENDS system_lib
 )
 
@@ -139,6 +140,7 @@ add_definitions(
 )
 
 add_executable(ml_ndt_node src/ml_ndt_node.cpp src/scanmatcher.cpp src/layer.cpp src/field.cpp src/linear_search.cpp)
+add_dependencies(ml_ndt_node ${${PROJECT_NAME}_EXPORTED_TARGETS})
 target_link_libraries(ml_ndt_node 
     ${PCL_COMMON_LIBRARIES} 
     ${PCL_IO_LIBRARIES}
