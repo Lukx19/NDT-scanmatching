@@ -3,8 +3,9 @@
 
 #include <math.h>
 #include <ros/ros.h>
-#include "field.h"
-#include "scanmatcher.h"
+#include <field.h>
+#include <scanmatcher.h>
+#include <ml_ndt_scanmatching/NDTMapMsg.h>
 
 #ifndef DEBUG
   #define DEBUG(out); std::cout<<out<<"\n";
@@ -36,8 +37,7 @@ public:
   }
   // void addPoint(Id_t id,point_t pt);
   point_t getPoint(const Id_t id) const;
-  //dyn_matrix_t getMeanVectors();
-  //dyn_matrix_t getVarianceMatrices();
+  ml_ndt_scanmatching::NDTMapMsg getLayerData() const;
 
   bool calculateNdt(transform_t &transf, points_t &points);
   transform_t getTransformation();

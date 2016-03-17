@@ -4,6 +4,25 @@ Layer::point_t Layer::getPoint(const Id_t id) const {
   DEBUG("points size:"<<points_->size());
   return points_->at(id); }
 
+ml_ndt_scanmatching::NDTMapMsg Layer::getLayerData() const
+{
+  ml_ndt_scanmatching::NDTMapMsg msg;
+  msg.x_size = 2 * max_range_;
+  msg.y_size = 2 * max_range_;
+  msg.z_size = 0.0;
+  msg.x_cell_size = 2* max_range_ / size_;
+  msg.y_cell_size = 2* max_range_ / size_;
+  msg.z_cell_size = 0.0;
+  msg.x_cen = 0;
+  msg.y_cen = 0;
+  msg.z_cen = 0;
+  for(auto & grid_line : fields_){
+    for(auto & field : grid_line){
+      msg.cells.emplace_back(field.getCellData());
+    }
+  }
+  return msg;
+}
 bool Layer::calculateNdt(transform_t &transf, points_t &points) {
 
   //printLaserPoints(*points_);

@@ -6,6 +6,42 @@ void Field::calcNormDistribution(){
   prepNormDist();
 }
 
+ml_ndt_scanmatching::NDTCellMsg Field::getCellData()const
+{
+  ml_ndt_scanmatching::NDTCellMsg msg;
+  if(isReady()){
+    msg.mean_x = mean_(0);
+    msg.mean_y = mean_(1);
+    msg.mean_z = 0.0;
+    msg.occupancy = 100;
+    msg.N = static_cast<long>(points_ids_.size());
+    // filling from our covar 2x2 to 3d ndt msg covar 3x3
+    for(long row = 0; row < 2;++row){
+      for(long col = 0;col<2;++col){
+        msg.cov_matrix.push_back(covar_(row,col));
+      }
+      msg.cov_matrix.push_back(0.0);
+    }
+    for(size_t i =0; i< 3; ++i){
+      msg.cov_matrix.push_back(0.0);
+    }
+  }else{
+    msg.mean_x = 0.0;
+    msg.mean_y = 0.0;
+    msg.mean_z = 0.0;
+    msg.occupancy = 0.0;
+    msg.N = static_cast<long>(points_ids_.size());
+    for(size_t i = 0; i< 9;++i){
+      msg.cov_matrix.push_back(0.0);
+    }
+    msg.cov_matrix[0] = 1;
+    msg.cov_matrix[4] = 1;
+    msg.cov_matrix[8] = 1; 
+  }
+  
+  return msg;
+}
+
 Field::point_t Field::getMean() const{
   if(is_calc_){
     return mean_;

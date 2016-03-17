@@ -6,6 +6,7 @@
 #include <Eigen/SVD>
 #include <layer.h>
 #include <ros/ros.h>
+#include <ml_ndt_scanmatching/NDTCellMsg.h>
 #define EIGEN_ALIGN_TO_BOUNDARY(n) __attribute__((aligned(n)))
 
 #ifndef DEBUG
@@ -39,13 +40,14 @@ class Field{
     //  ndt_(ndt),x0_(x0),y0_(y0),x1_(x1),y1_(y1){}
     void addPoint(Id_t id);
     void calcNormDistribution();
-
+    ml_ndt_scanmatching::NDTCellMsg getCellData()const;
     point_t getMean() const;
     var_t getCovar() const;
     var_t getInvCovar() const;
     size_t getPoints() const;
     bool isReady() const;
     std::string toString() const;
+
 
   private:
     points2_t * points_;
