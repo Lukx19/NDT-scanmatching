@@ -12,6 +12,7 @@ find_package(catkin REQUIRED
   laser_geometry
   pcl_ros
   tf
+  geometry_msgs
 )
 find_package(PCL 1.3 REQUIRED COMPONENTS common io)
 
@@ -215,5 +216,6 @@ target_link_libraries(ml_ndt_node
 #   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
 # endif()
 
+catkin_add_gtest(${PROJECT_NAME}-test test/eigen_tools_test.cpp)
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
