@@ -43,7 +43,7 @@ bool Field::isReady() const{
 
 std::string Field::toString() const{
   //return std::to_string(points_ids_.size())+" ";//+":"+mean_[1];
-  if(points_ids_.size() < MIN_PTR_EVAL)
+  if(!is_calc_)
     return ". ";
   else
     return "O ";
@@ -52,9 +52,13 @@ std::string Field::toString() const{
 // ******************** PRIVATE FUNCTIONS ***************
 void Field::prepNormDist(){
   mean_ = calcMean();
-  covar_ = calcCovariance(mean_);
-  inv_covar_ = calcInvertedCovariance(covar_);
-  is_calc_ = true;
+  auto res = calcInvertedCovariance(calcCovariance(mean_));
+  covar_=std::get<0>(res);
+  inv_covar_ = std::get<1>(res);
+  is_calc_ = std::get<2>(res);
+  if(!is_calc_){
+    mean_ = point_t::Zero();
+  }
 }
 
 Field::point_t Field::calcMean() const {
@@ -82,18 +86,32 @@ Field::var_t Field::calcCovariance(const point_t & mean) const {
   return (mp.transpose()*mp) / (points_ids_.size()-1);
 }
 
-Field::var_t Field::calcInvertedCovariance(const var_t & covar)const{
-  if (points_ids_.size() < MIN_PTR_EVAL)
-    return var_t::Zero();
+std::tuple<Field::var_t,Field::var_t,bool>
+Field::calcInvertedCovariance(const var_t & covar)const{
+  std::tuple<Field::var_t,Field::var_t,bool> ret;
+  if (points_ids_.size() < MIN_PTR_EVAL){
+    return std::make_tuple(var_t::Zero(),var_t::Zero(),false);
+  }
+  std::pair<Field::var_t,Field::var_t> pair;
   Eigen::SelfAdjointEigenSolver<Eigen::Matrix2d> solver (covar);
   Eigen::Matrix2d evecs = solver.eigenvectors().real();
   Eigen::Vector2d evals = solver.eigenvalues().real();
-  float max_eval = evals.maxCoeff();
-  for(size_t i=0;i<2;++i){
-    if(evals(i)< max_eval* EVAL_FACTOR)
+  if(evals(0) <= 0 || evals(1) <= 0){
+    return std::make_tuple(var_t::Zero(),var_t::Zero(),false);
+  }
+  double max_eval = evals.maxCoeff();
+  bool recalc = false;
+  for(long i=0;i<2;++i){
+    if(evals(i)< max_eval* EVAL_FACTOR){
       evals(i) = max_eval / EVAL_FACTOR;
+      recalc = true;
+    }
   }
   //DEBUG("covar: "<<evecs*(evals.asDiagonal().inverse())*(evecs.transpose()));
-  return evecs*(evals.asDiagonal().inverse())*(evecs.transpose());
+  Field::var_t new_covar = covar;
+  if(recalc){
+    new_covar = evecs*(evals.asDiagonal().inverse())*(evecs.transpose());
+  }
+  return std::make_tuple(new_covar,evecs*(evals.asDiagonal().inverse())*(evecs.transpose()),true);
 }
 

@@ -61,7 +61,8 @@ class Field{
     void prepNormDist();
     point_t calcMean() const;
     var_t calcCovariance(const point_t & mean) const;
-    var_t calcInvertedCovariance(const var_t & covar) const;
+    std::tuple<var_t,var_t,bool>
+      calcInvertedCovariance(const var_t & covar)const;
 
     template<typename T>
     T pinv(const T & mat, double tolerance = 1.e-06f)const;
