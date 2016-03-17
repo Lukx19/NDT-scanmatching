@@ -151,7 +151,8 @@ bool Scanmatcher::calculateNdt(pose_t & current_pose_odom, points2_t &points) {
   double distance = getDistanceFromTransform(transform);
   DEBUG("angle:  "<<angle);
   DEBUG("distance: "<<distance);
-  if(std::abs(angle)< 0.261799388 && distance < 0.5)
+  transform.setIdentity();
+  if(std::abs(angle)< 0.10 && distance < 0.5)
    return false;
    for (auto &l : layer_) {
      if (l.calculateNdt(transform, points)) {
