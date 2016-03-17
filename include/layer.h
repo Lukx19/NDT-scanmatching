@@ -52,7 +52,8 @@ private:
   transform_t offset_;
   transform_t offset_inv_;
   field_grid_t fields_;
-  const size_t MAX_ITER = 1;
+  const size_t MAX_ITER = 50;
+  const double INC_CHANGE = 0.001;
   const size_t MIN_POINTS_IN_FIELD = 4;
   double LFD1,LFD2;
 
@@ -78,7 +79,7 @@ private:
   bool getPointField(const point_t & pt, Field & field)const;
   double scorePoint(const Field & field, const point_t & transformed_pt)const;
   double scoreLayer(const transform_t & trans, const points_t & cloud_in) const;
-  
+
   //perform line search to find the best descent rate (Mohre&Thuente)
   //adapted from NOX based on implementation:
   double lineSearchMT(const transform_t & trans,

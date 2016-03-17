@@ -9,16 +9,19 @@ bool Layer::calculateNdt(transform_t &transf, points_t &points) {
   //printLaserPoints(*points_);
   //printLaserPoints(points);
   transform_t p = transf;
-  //p.setIdentity();
+  p.setIdentity();
   transform_t old_p = transf;
+  transform_t best_p = transform_t::Identity();
   transform_t delta;
+
   point_t difference;
-  double best_score=0;
+  long best_score=std::numeric_limits<long>::max();
   size_t iter=0;
   bool converged = false;
   //DEBUG("Solving layer "<<size_);
+  DEBUG("Score at the beggining: "<<scoreLayer(p,points));
   while (!converged) {
-    //DEBUG("Starting new iteration");
+    DEBUG("Starting new iteration "<<iter <<"best score: "<<best_score);
     old_p = p;
     pose_t g = pose_t::Zero();
     hessian_t hessian = hessian.Zero();
@@ -28,7 +31,7 @@ bool Layer::calculateNdt(transform_t &transf, points_t &points) {
     rot = rot.fromRotationMatrix(p.rotation());
     double si = std::sin(rot.angle());
     double co = std::cos(rot.angle());
-    double total_score = 0;
+    long total_score = 0;
 
     for (const auto & point : points) {
       point_t trans_point = p*point;
@@ -40,7 +43,7 @@ bool Layer::calculateNdt(transform_t &transf, points_t &points) {
       covar_t inv_covar =field.getInvCovar();
       //DEBUG(inv_variace);
       difference = trans_point - field.getMean();
-      double point_score = scorePoint(field,trans_point);
+      long point_score = scorePoint(field,trans_point);
       //DEBUG(difference.dot(field.calcInvertedVariance() * difference)* -0.5F);
       //DEBUG(point_score);
       total_score += point_score;
@@ -57,19 +60,19 @@ bool Layer::calculateNdt(transform_t &transf, points_t &points) {
       // create hessian for each point
 
     }
-    if(total_score  > -0.0001){
-     DEBUG("Score is too small finished.");
-     break;
-    }
+    // if(total_score  > -0.0001){
+    //  DEBUG("Score is too small finished.");
+    //  break;
+    // }
 
-    //DEBUG("score:"<<total_score);
+    DEBUG("score:"<<total_score);
     pose_t delta_p;
     hessian = makeToSPD(hessian,g);
 
     Eigen::SelfAdjointEigenSolver<hessian_t> saes(hessian);
     //DEBUG("eigenvalues: "<<saes.eigenvalues().transpose());
     double min_eigenval = saes.eigenvalues().minCoeff();
-    if(min_eigenval<0 || saes.eigenvalues().sum() * 0 != 0){
+    if(min_eigenval<0){
       DEBUG("EIGEN values are negative");
       break;
     }
@@ -92,15 +95,34 @@ bool Layer::calculateNdt(transform_t &transf, points_t &points) {
     delta = delta.fromPositionOrientationScale(delta_p.head<2>(),
                                               Eigen::Rotation2Dd(delta_p(2)),
                                               point_t::Ones());//delta_p;
-      p=delta * p;
-      int step = lineSearchMT(p,g,delta_p,points);
-      DEBUG("step: "<<step);
-   if(iter >= MAX_ITER || delta_p.array().abs().sum() < 0.001)
+    DEBUG("Score after Newton: "<<total_score);
+    if(total_score < best_score)
+    {
+        best_p = p;
+        best_score = total_score;
+    }
+    double step = lineSearchMT(p,g,delta_p,points);
+    delta_p *= step;
+    DEBUG("Linear search step: "<<step);
+    delta = delta.fromPositionOrientationScale(delta_p.head<2>(),
+                                              Eigen::Rotation2Dd(delta_p(2)),
+                                              point_t::Ones());//delta_p;
+    DEBUG("delta after LS: "<<delta_p);
+    p=delta * p;
+    total_score = scoreLayer(p,points);
+    DEBUG("Score after LS: "<<total_score);
+    if(total_score < best_score){
+       best_p = p;
+       best_score = total_score;
+    }
+    DEBUG("change in pose: "<<delta_p.norm());
+   if(iter >= MAX_ITER )//|| delta_p.norm() < INC_CHANGE)
      converged = true;
     ++iter;
-  }
 
-  transform_ = p;
+  } // end of converge while
+
+  transform_ = best_p;
   return true;
 }
 
