@@ -6,6 +6,7 @@
 #include <ros/ros.h>
 #include <sensor_msgs/LaserScan.h>
 #include <nav_msgs/Odometry.h>
+#include <geometry_msgs/PoseStamped.h>
 #include <message_filters/subscriber.h>
 #include <message_filters/time_synchronizer.h>
 #include <message_filters/synchronizer.h>
@@ -18,27 +19,32 @@
 
 #include <pcl_conversions/pcl_conversions.h>
 #include <pcl_ros/transforms.h>
-
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
+#include <pcl/registration/ndt_2d.h>
 
 #include <Eigen/Dense>
 #include <scanmatcher.h>
+#include <eigen_tools.h>
 
 class MlNdt {
+  enum ScanmatchingTypes {PCL2D,MLNDT2D};
 public:
   typedef message_filters::sync_policies::ApproximateTime<
       nav_msgs::Odometry, sensor_msgs::LaserScan> ImuSyncPolicy;
   typedef message_filters::Subscriber<nav_msgs::Odometry> odom_sub_t;
   typedef message_filters::Subscriber<sensor_msgs::LaserScan> laser_sub_t;
   typedef Eigen::Vector3d pose_t;
+  typedef pcl::PointCloud<pcl::PointXYZ> pcl_t;
   MlNdt(ros::NodeHandle &n, ros::NodeHandle &n_private);
   void start();
 private:
   ros::NodeHandle nh_;
   ros::NodeHandle nh_private_;
   Scanmatcher matcher_;
-
+  pcl::NormalDistributionsTransform2D<pcl::PointXYZ, pcl::PointXYZ> pcl_matcher_;
+  pcl_t::Ptr old_scan_;
+  pose_t old_odom_;
   // parameters from launch file
   std::string odom_frame_;
   std::string new_odom_frame_;
@@ -50,6 +56,7 @@ private:
   float max_range_;
   size_t resolution_;
   size_t layers_;
+  ScanmatchingTypes mode_;
 
   laser_geometry::LaserProjection projector_;
   tf::TransformListener tf_list_;
@@ -65,6 +72,13 @@ private:
   void data_cb(const nav_msgs::Odometry::ConstPtr &odom,
                const sensor_msgs::LaserScan::ConstPtr &laser);
   void initParameters();
+  bool getTransfMlNdt(pose_t & transform,
+                        const  pose_t & odom_pose,
+                        const pcl_t & points);
+
+  bool getTransfPclNdt(pose_t & transform,
+                          const pose_t & odom_pose,
+                          const pcl_t & points);
 };
 
 #endif

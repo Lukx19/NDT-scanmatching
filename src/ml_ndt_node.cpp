@@ -69,31 +69,23 @@ void MlNdt::data_cb(const nav_msgs::Odometry::ConstPtr &odom,
       tf::getYaw(odom->pose.pose.orientation);
   ROS_INFO("ML-NDT: Messages transformed.");
 
-  if (!is_initialized) {
-    matcher_.initialize(pose, laser_pcl_base);
-    is_initialized = true;
-    ROS_INFO("ML-NDT: First laser scan inserted to structure");
-  } else {
-    // calculate new odometry based on scan matching
-    matcher_.calculate(pose, laser_pcl_base);
-    Scanmatcher::pose_t new_pose = matcher_.getTransformation();
-    ROS_INFO("ML-NDT: New odom calculated %f  %f  %f", new_pose[0], new_pose[1],
-             new_pose[2]);
-    // fill in new odometry msg
-    nav_msgs::Odometry msg = matcher_.getOdom();
-    msg.header.frame_id = new_odom_frame_;
-    msg.header.stamp = ros::Time::now();
-    msg.header.seq = seq_;
-    msg.twist = odom->twist;
-    msg.pose.covariance = odom->pose.covariance;
-    new_odom_pub_.publish(msg);
-    // publish tf transform based on new odometry
-    tf::Transform transform = matcher_.getTFTransform();
-    tf_broadcast_.sendTransform(tf::StampedTransform(
-        transform, ros::Time::now(), new_odom_frame_, odom_frame_));
-    ++seq_;
-    ROS_INFO("ML-NDT: New odom sent");
+
+  pose_t calc_trans;
+  if(mode_ == MLNDT2D){
+    if(!getTransfMlNdt(calc_trans,pose,laser_pcl_base)){
+      return;
+    }
+  }else if(mode_ == PCL2D){
+    if(!getTransfPclNdt(calc_trans,pose,laser_pcl_base))
+      return;
   }
+  ROS_INFO_STREAM("NDT res:"<<calc_trans.transpose());
+
+    // tf_broadcast_.sendTransform(tf::StampedTransform(
+    //     transform, ros::Time::now(), new_odom_frame_, odom_frame_));
+    ++seq_;
+    old_odom_ = pose;
+    //ROS_INFO("ML-NDT: New odom sent");
 }
 
 void MlNdt::initParameters() {
@@ -127,12 +119,77 @@ void MlNdt::initParameters() {
 
   layers_ = static_cast<size_t>(nh_private_.param<int>("number_of_layers", 4));
 
+  std::string mode = nh_private_.param<std::string>("scanmatcher_mode", "MLNDT2D");
+  if(mode == "MLNDT2D"){
+    mode_ = MLNDT2D;
+  }else if( mode == "PCL2D"){
+    mode_ = PCL2D;
+  }
+
   if (tf_prefix_ != "") {
     robot_base_frame_ = tf_prefix_ + "/" + robot_base_frame_;
     odom_frame_ = tf_prefix_ + "/" + odom_frame_;
     new_odom_frame_ = tf_prefix_ + "/" + new_odom_frame_;
   }
 }
+
+bool MlNdt::getTransfMlNdt(pose_t & transform,
+                           const pose_t & odom_pose,
+                           const pcl_t & points)
+{
+  if (!is_initialized) {
+    matcher_.initialize(odom_pose, points);
+    is_initialized = true;
+    ROS_INFO("ML-NDT: First laser scan inserted to structure");
+    transform = pose_t::Zero();
+    return false;
+  } else {
+    // calculate new odometry based on scan matching
+    matcher_.calculate(odom_pose, points);
+    transform = matcher_.getTransformation();
+    ROS_INFO("ML-NDT: New odom calculated %f  %f  %f", transform[0], transform[1],
+             transform[2]);
+  }
+    return true;
+}
+
+bool MlNdt::getTransfPclNdt(pose_t & transform,
+                          const pose_t & odom_pose,
+                          const pcl_t & points)
+{
+  if(!is_initialized){
+      old_scan_ = points.makeShared();
+      pcl_matcher_.setInputTarget (old_scan_);
+      is_initialized = true;
+      return false;
+    }else{
+
+      eigt::transform2d_t<double> odom_trans =
+                                  eigt::transBtwPoses<double>(old_odom_,odom_pose);
+      double distance =  eigt::getDisplacement(odom_trans);
+      double angle = eigt::getAngle(odom_trans);
+      if(distance < 0.3 || angle <0.2){
+         return false;
+       }
+      pcl_t::Ptr new_pcl = points.makeShared();
+      pcl_matcher_.setInputSource (new_pcl);
+      // Set initial alignment estimate found using robot odometry.
+        Eigen::Matrix<double, 4, 4>init_guess = eigt::convertTransform<double>(odom_trans); 
+       // Calculating required rigid transform to align the input cloud to the target cloud.
+       pcl_t::Ptr output_cloud (new pcl_t());
+       pcl_matcher_.align (*output_cloud,init_guess.cast<float>());
+
+       ROS_INFO_STREAM("Normal Distributions Transform has converged:" << pcl_matcher_.hasConverged ()
+            << " score: " << pcl_matcher_.getFitnessScore ());
+       transform = eigt::getPoseFromTransform<double>(
+                      eigt::convertTransform<double>(
+                        pcl_matcher_.getFinalTransformation().cast<double>()));
+       old_scan_ = std::move(new_pcl);
+       pcl_matcher_.setInputTarget (old_scan_);
+    }
+    return true;
+}
+
 
 int main(int argc, char **argv) {
 
