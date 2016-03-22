@@ -3,6 +3,7 @@
 
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
+#include <iostream>
 
 #ifndef M_PI
 #define M_PI 3.141592653589793238462643383279502884197169399375105820974944592
@@ -48,11 +49,11 @@ T getAngleDiffrence(const pose2d_t<T> &from, const pose2d_t<T> &to);
 
 // Maps 4x4 transformation matrix to 3x3 transformation matrix
 template <typename T>
-transform2d_t<T> convertTransform(const Eigen::Matrix<T, 4, 4> &trans);
+transform2d_t<T> convertToTransform(const Eigen::Matrix<T, 4, 4> &trans);
 
 // MAPS from 3x3 transformation matrix to 4x4 Transformation matrix
 template <typename T>
-Eigen::Matrix<T, 4, 4> convertTransform(const transform2d_t<T> &trans);
+Eigen::Matrix<T, 4, 4> convertFromTransform(const transform2d_t<T> &trans);
 
 // Maps transformation encoded in pose vector [delta_x,delta_y,delta_angle] to
 // transformation matrix
@@ -122,7 +123,7 @@ T eigt::getAngleDiffrence(const pose2d_t<T> &from, const pose2d_t<T> &to)
 
 template <typename T>
 eigt::transform2d_t<T>
-eigt::convertTransform(const Eigen::Matrix<T, 4, 4> &trans)
+eigt::convertToTransform(const Eigen::Matrix<T, 4, 4> &trans)
 {
   transform2d_t<T> new_trans;
   new_trans.setIdentity();
@@ -132,7 +133,7 @@ eigt::convertTransform(const Eigen::Matrix<T, 4, 4> &trans)
 }
 
 template <typename T>
-Eigen::Matrix<T, 4, 4> eigt::convertTransform(const transform2d_t<T> &trans)
+Eigen::Matrix<T, 4, 4> eigt::convertFromTransform(const transform2d_t<T> &trans)
 {
   Eigen::Matrix<T, 4, 4> new_trans;
   pose2d_t<T> pose = getPoseFromTransform<T>(trans);
