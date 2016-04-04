@@ -15,6 +15,7 @@
 
 #include <layer.h>
 #include <field.h>
+#include <eigen_tools.h>
 
 #include <ml_ndt_scanmatching/NDTMapMsg.h>
 
@@ -46,7 +47,8 @@ public:
 
   pose_t calculate(const pose_t &prev_pose, const points2_t &first_scan, const pose_t &curr_pose,
                    const points2_t &second_scan);
-
+  bool match(const pcl_t & source,const pcl_t & target, transform_t & trans, const transform_t & init_guess = transform_t::Identity());
+  bool matchBiber(const pcl_t & source,const pcl_t & target, transform_t & trans, const transform_t & init_guess = transform_t::Identity());
   pose_t getTransformation() const;
   tf::Transform getTFTransform() const;
   pose_t getPose() const;
@@ -73,6 +75,8 @@ private:
   std::vector<Layer> layer_;
 
   const double PI_F = 3.14159265358979;
+  const double EPSILON = 0.0001;
+  const double MAX_ITER = 50;
 
   points2_t projectPointsTo2D(const pcl_t &points);
   void createLayers();
@@ -82,14 +86,8 @@ private:
   void updateLayers(const pose_t & calc_pose,const pose_t & odom,const points2_t & points);
 
   bool calculateNdt(const pose_t &pose, const points2_t &points);
+  double scoreLayers(const transform_t & trans, const points2_t & cloud_in) const;
   // calculates transform between last stored pose and new pose as a parameter
-  transform_t getPosesTransformation(const pose_t &from,const pose_t &to) const;
-  pose_t transformPose(const pose_t &pose,const transform_t &trans) const;
-  pose_t getPoseFromTransform(const transform_t & trans) const;
-  double getAngleFromTransform(const transform_t & trans) const;
-  double getDistanceFromTransform(const transform_t & trans)const;
-  double getAngleDiffrence(const pose_t & from, const pose_t & to)const;
-
 };
 
 #endif

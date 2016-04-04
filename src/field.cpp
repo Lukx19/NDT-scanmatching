@@ -104,7 +104,7 @@ Field::point_t Field::calcMean() const {
   for (const auto & id : points_ids_) {
     mean += points_->at(id);
   }
-  //DEBUG("mean: "<<mean / points_ids_.size());
+  DEBUG_FIE("mean: "<<(mean / points_ids_.size()).transpose());
   return mean / points_ids_.size();
 }
 
@@ -118,7 +118,7 @@ Field::var_t Field::calcCovariance(const point_t & mean) const {
     mp(i,0) = pt(0) -mean(0);
     mp(i,1) = pt(1) -mean(1); 
   }
-  //DEBUG("var: "<<(mp.transpose()*mp) / (points_ids_.size()-1))
+  DEBUG_FIE("covar original: \n"<<(mp.transpose()*mp) / (points_ids_.size()-1))
   return (mp.transpose()*mp) / (points_ids_.size()-1);
 }
 
@@ -132,22 +132,27 @@ Field::calcInvertedCovariance(const var_t & covar)const{
   Eigen::SelfAdjointEigenSolver<Eigen::Matrix2d> solver (covar);
   Eigen::Matrix2d evecs = solver.eigenvectors().real();
   Eigen::Vector2d evals = solver.eigenvalues().real();
+  DEBUG_FIE("eigenvalues befor scaling: "<<evals.transpose());
+  DEBUG_FIE("determinant before scaling: "<<covar.determinant());
   if(evals(0) <= 0 || evals(1) <= 0){
     return std::make_tuple(var_t::Zero(),var_t::Zero(),false);
   }
   double max_eval = evals.maxCoeff();
   bool recalc = false;
   for(long i=0;i<2;++i){
-    if(evals(i)< max_eval* EVAL_FACTOR){
+    if(evals(i) * EVAL_FACTOR < max_eval){
       evals(i) = max_eval / EVAL_FACTOR;
       recalc = true;
     }
   }
-  //DEBUG("covar: "<<evecs*(evals.asDiagonal().inverse())*(evecs.transpose()));
+  DEBUG_FIE("inv_covar: \n "<<evecs*(evals.asDiagonal().inverse())*(evecs.transpose()));
+  DEBUG_FIE("covar after scale: \n"<<evecs*(evals.asDiagonal())*(evecs.transpose()));
+
   Field::var_t new_covar = covar;
   if(recalc){
-    new_covar = evecs*(evals.asDiagonal().inverse())*(evecs.transpose());
-  }
+   new_covar = evecs*(evals.asDiagonal())*(evecs.transpose());
+ }
+ DEBUG_FIE("covar determinat: "<<new_covar.determinant()<<"\n");
   return std::make_tuple(new_covar,evecs*(evals.asDiagonal().inverse())*(evecs.transpose()),true);
 }
 

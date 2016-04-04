@@ -6,14 +6,14 @@
       <!-- incomming odometry  tf frame_id without tf_prefix -->
       <param name="odom_frame_id" value="odom"/>
       <!-- new calculated odometry result frame_id name -->
-      <param name="new_odom_frame_id" value="ndt_odom"/>
+      <param name="new_pose_farme_id" value="ndt_odom"/>
       <!-- topic to listen on for odometry messages -->
       <param name="odom_topic" value="/p3dx_0/dpl/odom"/>
       <!--  where to publish calculated odometry msgs -->
-      <param name="calculated_odom_topic" value="/p3dx_0/slam/odom"/>
+      <param name="calculated_pose_topic" value="/p3dx_0/slam/pose"/>
       <!-- where to listen for incomming laser msgs -->
       <param name="laser_topic" value="/p3dx_0/dpl/hal/laser/sensor0/LaserScan"/>
-      <!-- Choose from two scanmatching algorithms PCL implementation or MLNdt implementation [PCL2D, MLNDT2D] -->
+      <!-- Choose from two scanmatching algorithms PCL implementation or MLNdt implementation [PCL2D, MLNDT2D, D2DNDT] -->
       <param name="scanmatcher_mode" value="PCL2D"/>
       <!-- How many cells will be created on the highest level. Next levels will have more cells  -->
        <param name="resolution" type="int" value="16"/>

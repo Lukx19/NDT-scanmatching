@@ -9,8 +9,9 @@
 #include <ml_ndt_scanmatching/NDTCellMsg.h>
 #define EIGEN_ALIGN_TO_BOUNDARY(n) __attribute__((aligned(n)))
 
-#ifndef DEBUG
-  #define DEBUG(out); std::cout<<out<<"\n";
+#ifndef DEBUG_FIE
+//  #define DEBUG_FIE(out); std::cout<<out<<"\n";
+  #define DEBUG_FIE(out);;
 #endif
 
 //EIGEN_ALIGN_TO_BOUNDARY(8) 

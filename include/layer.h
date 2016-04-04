@@ -6,12 +6,33 @@
 #include <field.h>
 #include <scanmatcher.h>
 #include <ml_ndt_scanmatching/NDTMapMsg.h>
+#include <eigen_tools.h>
 
-#ifndef DEBUG
-  #define DEBUG(out); std::cout<<out<<"\n";
+#ifndef DEBUG_LAY
+  #define DEBUG_LAY(out); std::cout<<out<<"\n";
+ // #define DEBUG_LAY(out);;
 #endif
 class Scanmatcher;
 class Field;
+
+
+struct OptimalisationData{
+  typedef Eigen::Matrix3d hessian_t;
+  typedef Eigen::Vector3d gradient_t;
+  hessian_t hessian;
+  gradient_t gradient;
+  double score;
+  bool is_valid;
+
+  OptimalisationData()
+  {
+    setZero();
+  }
+  void setZero();
+  OptimalisationData operator+= (const OptimalisationData & other);
+  void makeToSPD();
+  void makeToSPD2();
+};
 
 class Layer {
 private:
@@ -41,6 +62,9 @@ public:
 
   bool calculateNdt(const transform_t &transf, const points_t  &points);
   transform_t getTransformation();
+
+  OptimalisationData calcOptData(const transform_t &transf, const points_t  &points) const;
+  double scoreLayer(const transform_t & trans, const points_t & cloud_in) const;
   std::string toString()const;
 
 private:
@@ -52,7 +76,7 @@ private:
   transform_t offset_;
   transform_t offset_inv_;
   field_grid_t fields_;
-  const size_t MAX_ITER = 50;
+  const size_t MAX_ITER = 3;
   const double INC_CHANGE = 0.001;
   const size_t MIN_POINTS_IN_FIELD = 4;
   double LFD1,LFD2;
@@ -78,7 +102,7 @@ private:
   void printLaserPoints(const points_t &points) const;
   bool getPointField(const point_t & pt, Field & field)const;
   double scorePoint(const Field & field, const point_t & transformed_pt)const;
-  double scoreLayer(const transform_t & trans, const points_t & cloud_in) const;
+  
 
   //perform line search to find the best descent rate (Mohre&Thuente)
   //adapted from NOX based on implementation:
