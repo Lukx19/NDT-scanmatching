@@ -1,0 +1,30 @@
+<launch>
+  <group ns="test">
+    <node pkg="ml_ndt_scanmatching" type="ml_ndt_node" name="ml_ndt" respawn="false" output="screen">
+      <!-- <param name="tf_prefix" value="p3dx_0"/> -->
+      <param name="robot_base_frame_id" value="base_link"/>
+      <!-- incomming odometry  tf frame_id without tf_prefix -->
+      <param name="odom_farme_id" value="odom"/>
+      <!-- new calculated odometry result frame_id name -->
+      <param name="new_pose_farme_id" value="odom"/>
+      <!-- topic to listen on for odometry messages -->
+      <param name="odom_topic" value="odom"/>
+      <!--  where to publish calculated odometry msgs -->
+      <param name="calculated_transform_topic" value="transform"/>
+      <!-- where to listen for incomming laser msgs -->
+      <param name="laser_topic" value="laser"/>
+      <!-- Choose from two scanmatching algorithms PCL implementation or MLNdt implementation [PCL2D, MLNDT2D, D2DNDT, PCL_ICP] -->
+      <param name="scanmatcher_mode" value="PCL2D"/>
+      <!-- How many cells will be created on the highest level. Next levels will have more cells  -->
+       <param name="resolution" type="int" value="30"/>
+       <!-- Maximal allowe range of laser sensor. Data exceeding this number will be dropped -->
+       <param name="maximal_laser_range" type="double" value="30.0"/>
+       <!-- Number of layers used to calculate ML-NDT Default:4 -->
+       <param name="number_of_layers" type="int" value="4"/>
+
+       <param name="min_rotated_angle" type="double" value="0.1"/>
+       <param name="min_traveled_distance" type="double" value="0.1"/>
+    </node>
+    <test test-name="ml_ndt_node_test" pkg="ml_ndt_scanmatching" type="ml_ndt_node_test.cpp" />
+  </group>
+</launch>
