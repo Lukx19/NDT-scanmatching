@@ -14,8 +14,9 @@ find_package(catkin REQUIRED
   tf
   geometry_msgs
   message_generation
+  ndt_registration
 )
-find_package(PCL 1.3 REQUIRED COMPONENTS common io)
+find_package(PCL 1.3 REQUIRED COMPONENTS common io registration)
 
 
 ## System dependencies are found with CMake's conventions
@@ -51,7 +52,7 @@ find_package(PCL 1.3 REQUIRED COMPONENTS common io)
 ##   * uncomment the generate_messages entry below
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
-## Generate messages in the 'msg' folder
+# Generate messages in the 'msg' folder
 add_message_files(
    FILES
    NDTCellMsg.msg
@@ -72,7 +73,7 @@ add_message_files(
 #   Action2.action
 # )
 
-## Generate added messages and services with any dependencies listed here
+# Generate added messages and services with any dependencies listed here
  generate_messages(
    DEPENDENCIES
    std_msgs  # Or other packages containing msgs
@@ -109,9 +110,9 @@ add_message_files(
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
   INCLUDE_DIRS include
-#  LIBRARIES ml_ndt_scanmatching
-  CATKIN_DEPENDS message_runtime std_msgs #roscpp vrep_common laser_geometry
-#  DEPENDS system_lib
+  LIBRARIES ${PROJECT_NAME}
+  CATKIN_DEPENDS std_msgs message_runtime  #roscpp vrep_common laser_geometry
+  DEPENDS eigen libpcl-all-dev
 )
 
 ###########
@@ -131,6 +132,7 @@ include_directories(
     include
     ${PCL_INCLUDE_DIRS}
     ${catkin_INCLUDE_DIRS}
+    ${Boost_INCLUDE_DIR}
 )
 link_directories(
     ${PCL_LIBRARY_DIRS}
@@ -142,10 +144,13 @@ add_definitions(
 add_executable(ml_ndt_node src/ml_ndt_node.cpp src/scanmatcher.cpp src/layer.cpp src/field.cpp src/linear_search.cpp)
 add_dependencies(ml_ndt_node ${${PROJECT_NAME}_EXPORTED_TARGETS})
 target_link_libraries(ml_ndt_node 
-    ${PCL_COMMON_LIBRARIES} 
+    ${PCL_COMMON_LIBRARIES}
     ${PCL_IO_LIBRARIES}
+    ${PCL_REGISTRATION_LIBRARIES}
+    # ${PCL_LIBRARIES}
     ${catkin_LIBRARIES}
 )
+
 
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
@@ -201,6 +206,10 @@ target_link_libraries(ml_ndt_node
 #   PATTERN ".svn" EXCLUDE
 # )
 
+install(DIRECTORY include/${PROJECT_NAME}/
+   DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
+ )
+
 ## Mark other files for installation (e.g. launch and bag files, etc.)
 # install(FILES
 #   # myfile1
@@ -211,13 +220,20 @@ target_link_libraries(ml_ndt_node
 #############
 ## Testing ##
 #############
+if(CATKIN_ENABLE_TESTING)
+  find_package(rostest REQUIRED)
+  
+  add_rostest_gtest(ml_ndt_node_test test/ml_ndt_node.test test/ml_ndt_node_test.cpp)
+  target_link_libraries(ml_ndt_node_test ${catkin_LIBRARIES})
 
+  catkin_add_gtest(${PROJECT_NAME}-test test/eigen_tools_test.cpp)
+endif()
 ## Add gtest based cpp test target and link libraries
 # catkin_add_gtest(${PROJECT_NAME}-test test/test_ml_ndt_scanmatching.cpp)
 # if(TARGET ${PROJECT_NAME}-test)
 #   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
 # endif()
 
-catkin_add_gtest(${PROJECT_NAME}-test test/eigen_tools_test.cpp)
+
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
