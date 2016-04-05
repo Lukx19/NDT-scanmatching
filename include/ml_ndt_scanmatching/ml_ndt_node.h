@@ -25,9 +25,9 @@
 
 
 #include <Eigen/Dense>
-#include <scanmatcher.h>
-#include <pcl_ndt2d.h>
-#include <eigen_tools.h>
+#include <ml_ndt_scanmatching/other/scanmatcher.h>
+#include <ml_ndt_scanmatching/pcl_ndt2d.h>
+#include <ml_ndt_scanmatching/eigen_tools.h>
 
 #include <ndt_registration/ndt_matcher_d2d_2d.h>
 

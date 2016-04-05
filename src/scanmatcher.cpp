@@ -1,4 +1,4 @@
-#include <scanmatcher.h>
+#include <ml_ndt_scanmatching/other/scanmatcher.h>
 
 void Scanmatcher::initialize(const pose_t &pose, const points2_t &points) {
   initializeNdt(pose, points);

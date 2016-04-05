@@ -13,9 +13,9 @@
 #include <Eigen/Dense>
 #include <Eigen/Geometry> 
 
-#include <layer.h>
-#include <field.h>
-#include <eigen_tools.h>
+#include <ml_ndt_scanmatching/other/layer.h>
+#include <ml_ndt_scanmatching/other/field.h>
+#include <ml_ndt_scanmatching/eigen_tools.h>
 
 #include <ml_ndt_scanmatching/NDTMapMsg.h>
 

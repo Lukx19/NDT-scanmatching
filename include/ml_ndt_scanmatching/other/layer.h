@@ -3,10 +3,10 @@
 
 #include <math.h>
 #include <ros/ros.h>
-#include <field.h>
-#include <scanmatcher.h>
+#include <ml_ndt_scanmatching/other/field.h>
+#include <ml_ndt_scanmatching/other/scanmatcher.h>
 #include <ml_ndt_scanmatching/NDTMapMsg.h>
-#include <eigen_tools.h>
+#include <ml_ndt_scanmatching/eigen_tools.h>
 
 #ifndef DEBUG_LAY
   #define DEBUG_LAY(out); std::cout<<out<<"\n";

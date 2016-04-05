@@ -1,4 +1,4 @@
-#include <field.h>
+#include <ml_ndt_scanmatching/other/field.h>
 
 void Field::addPoint(Id_t id) { points_ids_.emplace_back(id); }
 

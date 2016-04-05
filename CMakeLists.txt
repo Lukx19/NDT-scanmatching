@@ -110,7 +110,7 @@ add_message_files(
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
   INCLUDE_DIRS include
-  LIBRARIES ${PROJECT_NAME}
+  #LIBRARIES ${PROJECT_NAME}
   CATKIN_DEPENDS std_msgs message_runtime  #roscpp vrep_common laser_geometry
   DEPENDS eigen libpcl-all-dev
 )
@@ -205,9 +205,15 @@ target_link_libraries(ml_ndt_node
 #   FILES_MATCHING PATTERN "*.h"
 #   PATTERN ".svn" EXCLUDE
 # )
+install(TARGETS ml_ndt_node
+   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
 
 install(DIRECTORY include/${PROJECT_NAME}/
    DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
+   FILES_MATCHING PATTERN "*.h"
  )
 
 ## Mark other files for installation (e.g. launch and bag files, etc.)

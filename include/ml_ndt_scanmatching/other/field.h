@@ -4,7 +4,7 @@
 #include <vector>
 #include <Eigen/Dense>
 #include <Eigen/SVD>
-#include <layer.h>
+#include <ml_ndt_scanmatching/other/layer.h>
 #include <ros/ros.h>
 #include <ml_ndt_scanmatching/NDTCellMsg.h>
 #define EIGEN_ALIGN_TO_BOUNDARY(n) __attribute__((aligned(n)))

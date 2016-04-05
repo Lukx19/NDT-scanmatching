@@ -1,4 +1,4 @@
-#include <ml_ndt_node.h>
+#include <ml_ndt_scanmatching/ml_ndt_node.h>
 
 // ******************************* CONSTRUCTORS ********************
 
